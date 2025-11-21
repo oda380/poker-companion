@@ -1,0 +1,294 @@
+import { usePokerStore } from "@/store/usePokerStore";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CardKeyboard } from "./CardKeyboard";
+import { useState } from "react";
+import { evaluateWinners } from "@/lib/hand-evaluator";
+import { Trophy } from "lucide-react";
+
+interface EvaluationResult {
+    winners: Array<{ playerId: string; handDescription: string }>;
+    allHands: Record<string, { cards: string[]; handDescription: string }>;
+}
+
+export function ShowdownDialog() {
+    const currentHand = usePokerStore((state) => state.currentHand);
+    const players = usePokerStore((state) => state.players);
+    const [playerHands, setPlayerHands] = useState<Record<string, string[]>>({});
+    const [currentInputPlayer, setCurrentInputPlayer] = useState<string | null>(null);
+    const [selectedCards, setSelectedCards] = useState<string[]>([]);
+    const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+
+    // Only show if hand is in showdown phase (no active player)
+    const isShowdown = currentHand && currentHand.activePlayerId === "";
+
+    if (!isShowdown) return null;
+
+    const remainingPlayers = players.filter(p =>
+        !p.isSittingOut && p.status !== "folded"
+    );
+
+    const totalPot = Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
+
+    // For Stud, players already have their cards - extract them
+    const isStud = currentHand.gameVariant === "fiveCardStud";
+
+    // Auto-populate Stud hands on mount
+    if (isStud && Object.keys(playerHands).length === 0) {
+        const studHands: Record<string, string[]> = {};
+        currentHand.playerHands.forEach(ph => {
+            studHands[ph.playerId] = ph.cards.map(c => c.code);
+        });
+        setPlayerHands(studHands);
+    }
+
+    // Check if we're still inputting hands (only for Hold'em)
+    const playersNeedingInput = isStud ? [] : remainingPlayers.filter(p => !playerHands[p.id]);
+    const needsInput = playersNeedingInput.length > 0;
+
+    const handleCardSelect = (cardCode: string) => {
+        if (selectedCards.length < 2) {
+            setSelectedCards([...selectedCards, cardCode]);
+        }
+    };
+
+    const handleRemoveLast = () => {
+        setSelectedCards(selectedCards.slice(0, -1));
+    };
+
+    const handleConfirmHand = () => {
+        if (currentInputPlayer && selectedCards.length === 2) {
+            setPlayerHands({
+                ...playerHands,
+                [currentInputPlayer]: selectedCards
+            });
+            setSelectedCards([]);
+            setCurrentInputPlayer(null);
+        }
+    };
+
+    const handleStartInput = (playerId: string) => {
+        setCurrentInputPlayer(playerId);
+        setSelectedCards([]);
+    };
+
+    const handleEvaluate = () => {
+        if (!currentHand) return;
+
+        // Evaluate winners using poker-evaluator
+        const winners = evaluateWinners(
+            playerHands,
+            currentHand.board,
+            currentHand.gameVariant
+        );
+
+        // Store all hands with descriptions for display
+        const allHands: Record<string, { cards: string[]; handDescription: string }> = {};
+        Object.entries(playerHands).forEach(([playerId, cards]) => {
+            const winner = winners.find(w => w.playerId === playerId);
+            allHands[playerId] = {
+                cards,
+                handDescription: winner?.handDescription || "Lost"
+            };
+        });
+
+        setEvaluationResult({ winners, allHands });
+    };
+
+    const handleConfirmResults = () => {
+        if (!currentHand || !evaluationResult) return;
+
+        // Award pot to winners
+        const potPerWinner = totalPot / evaluationResult.winners.length;
+
+        usePokerStore.setState((state) => ({
+            ...state,
+            players: state.players.map(p => {
+                const winner = evaluationResult.winners.find(w => w.playerId === p.id);
+                return winner ? { ...p, stack: p.stack + potPerWinner } : p;
+            }),
+            currentHand: undefined,
+            handHistory: [
+                ...state.handHistory,
+                {
+                    id: Math.random().toString(36).substring(2, 15),
+                    handNumber: currentHand.handNumber,
+                    gameVariant: currentHand.gameVariant,
+                    dealerSeat: currentHand.dealerSeat,
+                    winners: evaluationResult.winners.map(w => ({
+                        playerId: w.playerId,
+                        potShare: potPerWinner,
+                        handDescription: w.handDescription
+                    })),
+                    totalPot,
+                    createdAt: new Date().toISOString()
+                }
+            ]
+        }));
+
+        // Reset state
+        setPlayerHands({});
+        setEvaluationResult(null);
+    };
+
+    return (
+        <Dialog open={isShowdown} onOpenChange={() => { }}>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>
+                        {evaluationResult ? "Showdown Results" : "Showdown - Input Player Hands"}
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="text-center">
+                        <div className="text-sm text-muted-foreground">Total Pot</div>
+                        <div className="text-4xl font-bold text-primary">{totalPot}</div>
+                    </div>
+
+                    {/* Board Cards */}
+                    {currentHand.board.length > 0 && (
+                        <div className="flex justify-center gap-2 p-4 bg-muted/30 rounded">
+                            {currentHand.board.map((card, i) => (
+                                <div
+                                    key={i}
+                                    className="w-12 h-16 bg-white rounded border-2 border-gray-300 shadow flex items-center justify-center text-lg font-bold text-black"
+                                >
+                                    {card}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {evaluationResult ? (
+                        /* Results Screen */
+                        <div className="space-y-4">
+                            {remainingPlayers.map((player) => {
+                                const isWinner = evaluationResult.winners.some(w => w.playerId === player.id);
+                                const handInfo = evaluationResult.allHands[player.id];
+
+                                return (
+                                    <div
+                                        key={player.id}
+                                        className={`p-4 rounded-lg border-2 ${isWinner
+                                            ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950'
+                                            : 'border-gray-200 bg-gray-50 dark:bg-gray-900'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                {isWinner && <Trophy className="w-5 h-5 text-yellow-500" />}
+                                                <span className="font-bold text-lg">{player.name}</span>
+                                            </div>
+                                            <span className={`text-sm font-medium ${isWinner ? 'text-yellow-700 dark:text-yellow-400' : 'text-muted-foreground'}`}>
+                                                {handInfo?.handDescription}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {handInfo?.cards.map((card, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-12 h-16 bg-white rounded border-2 border-gray-300 shadow flex items-center justify-center text-lg font-bold text-black"
+                                                >
+                                                    {card}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            <Button
+                                size="lg"
+                                className="w-full"
+                                onClick={handleConfirmResults}
+                            >
+                                Confirm & Start Next Hand
+                            </Button>
+                        </div>
+                    ) : needsInput ? (
+                        /* Hand Input Screen */
+                        <>
+                            {currentInputPlayer ? (
+                                <div className="space-y-4">
+                                    <div className="text-center">
+                                        <div className="font-bold text-lg">
+                                            {players.find(p => p.id === currentInputPlayer)?.name}'s Hand
+                                        </div>
+                                        <div className="flex justify-center gap-2 mt-2">
+                                            {selectedCards.map((card, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="w-12 h-16 bg-white rounded border-2 border-primary shadow flex items-center justify-center text-lg font-bold text-black"
+                                                >
+                                                    {card}
+                                                </div>
+                                            ))}
+                                            {Array.from({ length: 2 - selectedCards.length }).map((_, i) => (
+                                                <div
+                                                    key={`empty-${i}`}
+                                                    className="w-12 h-16 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="h-48">
+                                        <CardKeyboard onCardSelect={handleCardSelect} />
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="flex-1"
+                                            onClick={handleRemoveLast}
+                                            disabled={selectedCards.length === 0}
+                                        >
+                                            Remove Last
+                                        </Button>
+                                        <Button
+                                            className="flex-1"
+                                            onClick={handleConfirmHand}
+                                            disabled={selectedCards.length !== 2}
+                                        >
+                                            Confirm Hand
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="text-sm font-medium">Select player to input their hand:</div>
+                                    {remainingPlayers.map((player) => (
+                                        <Button
+                                            key={player.id}
+                                            variant="outline"
+                                            className="w-full h-14 text-lg justify-start"
+                                            onClick={() => handleStartInput(player.id)}
+                                        >
+                                            {player.name}
+                                            {playerHands[player.id] && (
+                                                <span className="ml-2 text-sm text-green-600">✓ Hand entered</span>
+                                            )}
+                                        </Button>
+                                    ))}
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="text-center text-sm text-muted-foreground">
+                                All hands entered. Click below to evaluate and see results.
+                            </div>
+                            <Button
+                                size="lg"
+                                className="w-full"
+                                onClick={handleEvaluate}
+                            >
+                                Evaluate Hands
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
