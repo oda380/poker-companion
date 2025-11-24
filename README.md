@@ -1,36 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Poker Companion
+
+A modern, premium poker table management application built with Next.js. Track hands, manage players, and run live poker games for both Texas Hold'em and 5-Card Stud variants.
+
+## Features
+
+### Game Variants
+- **Texas Hold'em**: Full support for ring games and heads-up play with correct blind positions and action order
+- **5-Card Stud**: Classic stud poker with face-up and face-down card tracking
+
+### Premium Design
+- 🎨 **Modern UI**: Dark theme with vibrant accents and smooth animations
+- 🎴 **Realistic Cards**: Professional card design with suit symbols, colors, and textures
+- 🪙 **3D Chip Visualization**: Color-coded chips (Red $5, Green $25, Black $100, Purple $500, Gold $1000)
+- 🎯 **Dealer Button**: Realistic white acrylic puck design
+- ✨ **Smooth Animations**: Framer Motion-powered transitions and effects
+
+### Game Management
+- **Player Tracking**: Manage player stacks, seats, and statuses
+- **Betting Rounds**: Robust betting logic with proper round completion
+- **Pot Tracking**: Accurate pot calculation and display across streets
+- **Hand History**: Complete record of all hands played
+- **Undo/Redo**: Powered by Zundo for temporal state management
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **UI Components**: Radix UI primitives
+- **State Management**: Zustand with temporal (undo/redo) support
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ 
+- npm, yarn, pnpm, or bun
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/oda380/poker-companion.git
+cd poker-companion
+
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+1. **Setup**: Navigate to `/setup` to configure your table (game variant, blinds, players)
+2. **Table**: Start playing at `/table` - the app will guide you through:
+   - Dealer selection
+   - Initial card dealing
+   - Betting rounds
+   - Community cards (Hold'em) or additional cards (Stud)
+   - Showdown
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Controls
+- **Fold**: Exit the current hand
+- **Check**: Pass action (when no bet is required)
+- **Call/Raise**: Match or increase the current bet
+- **Undo**: Revert the last action (accessible via menu)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/              # Next.js app router pages
+├── components/       # React components
+│   ├── game/        # Game-specific components (Cards, Controls, etc.)
+│   └── ui/          # Reusable UI components (shadcn/ui)
+├── lib/             # Core game logic and utilities
+│   ├── game-logic.ts    # Hand initialization and action processing
+│   ├── deck.ts          # Card deck utilities
+│   └── pot-calculator.ts # Pot calculation logic
+├── store/           # Zustand state management
+└── types.ts         # TypeScript type definitions
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Known Limitations (MVP)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Side Pots**: Not yet implemented - all bets go to a single main pot
+- **Hand Evaluation**: Showdown currently awards pot to first remaining player (hand strength evaluation coming soon)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is private and not licensed for public use.
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+- Icons from [Lucide](https://lucide.dev/)
