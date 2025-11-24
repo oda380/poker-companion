@@ -30,24 +30,40 @@ export function ShowdownDialog() {
 
     const totalPot = Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
 
-    // For Stud, players already have their cards - extract them
+    // For Stud, extract face-up cards and check if hole cards need input
     const isStud = currentHand.gameVariant === "fiveCardStud";
 
-    // Auto-populate Stud hands on mount
+    // Auto-populate Stud hands on mount (face-up cards only)
     if (isStud && Object.keys(playerHands).length === 0) {
         const studHands: Record<string, string[]> = {};
         currentHand.playerHands.forEach(ph => {
-            studHands[ph.playerId] = ph.cards.map(c => c.code);
+            // Extract only face-up cards (skip placeholder hole card)
+            const faceUpCards = ph.cards.filter(c => c.faceUp && c.code).map(c => c.code);
+            if (faceUpCards.length > 0) {
+                studHands[ph.playerId] = faceUpCards;
+            }
         });
         setPlayerHands(studHands);
     }
 
-    // Check if we're still inputting hands (only for Hold'em)
-    const playersNeedingInput = isStud ? [] : remainingPlayers.filter(p => !playerHands[p.id]);
+    // Check if we're still inputting hands
+    // For Stud: need to input hole card (1 card) for each player
+    // For Hold'em: need to input 2 hole cards for each player
+    const playersNeedingInput = remainingPlayers.filter(p => {
+        const hand = playerHands[p.id];
+        if (isStud) {
+            // Stud: need exactly 1 more card (the hole card)
+            return !hand || hand.length < 1;
+        } else {
+            // Hold'em: need 2 cards
+            return !hand || hand.length < 2;
+        }
+    });
     const needsInput = playersNeedingInput.length > 0;
 
     const handleCardSelect = (cardCode: string) => {
-        if (selectedCards.length < 2) {
+        const maxCards = isStud ? 1 : 2; // Stud: 1 hole card, Hold'em: 2 hole cards
+        if (selectedCards.length < maxCards) {
             setSelectedCards([...selectedCards, cardCode]);
         }
     };
@@ -57,7 +73,8 @@ export function ShowdownDialog() {
     };
 
     const handleConfirmHand = () => {
-        if (currentInputPlayer && selectedCards.length === 2) {
+        const requiredCards = isStud ? 1 : 2;
+        if (currentInputPlayer && selectedCards.length === requiredCards) {
             setPlayerHands({
                 ...playerHands,
                 [currentInputPlayer]: selectedCards
@@ -75,16 +92,29 @@ export function ShowdownDialog() {
     const handleEvaluate = () => {
         if (!currentHand) return;
 
+        // For Stud, combine hole cards (from input) with face-up cards (from hand state)
+        let fullPlayerHands = { ...playerHands };
+        if (isStud) {
+            fullPlayerHands = {};
+            Object.entries(playerHands).forEach(([playerId, holeCards]) => {
+                // Get face-up cards from current hand
+                const playerHandState = currentHand.playerHands.find(ph => ph.playerId === playerId);
+                const faceUpCards = playerHandState?.cards.filter(c => c.faceUp && c.code).map(c => c.code) || [];
+                // Combine: hole card(s) + face-up cards
+                fullPlayerHands[playerId] = [...holeCards, ...faceUpCards];
+            });
+        }
+
         // Evaluate winners using poker-evaluator
         const winners = evaluateWinners(
-            playerHands,
+            fullPlayerHands,
             currentHand.board,
             currentHand.gameVariant
         );
 
         // Store all hands with descriptions for display
         const allHands: Record<string, { cards: string[]; handDescription: string }> = {};
-        Object.entries(playerHands).forEach(([playerId, cards]) => {
+        Object.entries(fullPlayerHands).forEach(([playerId, cards]) => {
             const winner = winners.find(w => w.playerId === playerId);
             allHands[playerId] = {
                 cards,
@@ -233,7 +263,17 @@ export function ShowdownDialog() {
                                     </div>
 
                                     <div className="h-48">
-                                        <CardKeyboard onCardSelect={handleCardSelect} />
+                                        <CardKeyboard
+                                            onCardSelect={handleCardSelect}
+                                            usedCards={[
+                                                // Board cards (Hold'em)
+                                                ...currentHand.board,
+                                                // All entered player hands
+                                                ...Object.values(playerHands).flat(),
+                                                // Currently selected cards
+                                                ...selectedCards
+                                            ]}
+                                        />
                                     </div>
 
                                     <div className="flex gap-2">

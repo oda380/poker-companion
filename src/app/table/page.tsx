@@ -24,6 +24,7 @@ export default function TablePage() {
     const router = useRouter();
     const players = usePokerStore((state) => state.players);
     const currentHand = usePokerStore((state) => state.currentHand);
+    const handHistory = usePokerStore((state) => state.handHistory);
     const startNewHand = usePokerStore((state) => state.startNewHand);
     const undo = usePokerStore.temporal.getState().undo;
 
@@ -121,7 +122,7 @@ export default function TablePage() {
                 </div>
 
                 {/* Start Hand Button (if no hand active) */}
-                {!currentHand && (
+                {!currentHand && handHistory.length > 0 && (
                     <div className="p-8 flex justify-center">
                         <Button size="lg" className="w-full max-w-xs h-14 text-lg" onClick={() => startNewHand()}>
                             Deal Hand

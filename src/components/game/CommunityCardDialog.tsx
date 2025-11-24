@@ -89,7 +89,10 @@ export function CommunityCardDialog() {
                     </div>
 
                     <div className="h-64">
-                        <CardKeyboard onCardSelect={handleCardSelect} />
+                        <CardKeyboard
+                            onCardSelect={handleCardSelect}
+                            usedCards={[...currentHand.board, ...selectedCards]}
+                        />
                     </div>
 
                     <div className="flex gap-2">

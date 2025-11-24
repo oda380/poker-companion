@@ -57,10 +57,10 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                                 key={i}
                                 className={cn(
                                     "w-8 h-11 rounded border shadow-sm flex items-center justify-center text-xs font-bold bg-white text-black select-none",
-                                    !card.faceUp && "bg-blue-900 text-transparent border-blue-800" // Card back
+                                    (!card.faceUp || !card.code) && "bg-blue-900 text-transparent border-blue-800" // Card back for face-down or placeholder
                                 )}
                             >
-                                {card.faceUp ? card.code : ""}
+                                {card.faceUp && card.code ? card.code : ""}
                             </div>
                         ))}
                     </div>

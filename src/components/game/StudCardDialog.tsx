@@ -39,12 +39,16 @@ export function StudCardDialog() {
         usePokerStore.setState((state) => {
             if (!state.currentHand) return state;
 
-            // Add card to current player's hand (always face-up after initial deal)
+            // All cards dealt through this dialog are face-up
+            // (Hole card is already a placeholder from initialization)
+            const isFaceUp = true;
+
+            // Add card to current player's hand
             const updatedPlayerHands = state.currentHand.playerHands.map(ph => {
                 if (ph.playerId === currentPlayer.id) {
                     return {
                         ...ph,
-                        cards: [...ph.cards, { code: selectedCard, faceUp: true }]
+                        cards: [...ph.cards, { code: selectedCard, faceUp: isFaceUp }]
                     };
                 }
                 return ph;
@@ -114,8 +118,8 @@ export function StudCardDialog() {
                                 <div
                                     key={i}
                                     className={`w-10 h-14 rounded border-2 shadow flex items-center justify-center text-sm font-bold ${card.faceUp
-                                            ? 'bg-white border-gray-300 text-black'
-                                            : 'bg-blue-600 border-blue-700 text-white'
+                                        ? 'bg-white border-gray-300 text-black'
+                                        : 'bg-blue-600 border-blue-700 text-white'
                                         }`}
                                 >
                                     {card.faceUp ? card.code : '🂠'}
@@ -136,7 +140,15 @@ export function StudCardDialog() {
                     </div>
 
                     <div className="h-56">
-                        <CardKeyboard onCardSelect={handleCardSelect} />
+                        <CardKeyboard
+                            onCardSelect={handleCardSelect}
+                            usedCards={[
+                                // All cards from all player hands
+                                ...currentHand.playerHands.flatMap(ph => ph.cards.map(c => c.code)),
+                                // Currently selected card (if any)
+                                ...(selectedCard ? [selectedCard] : [])
+                            ]}
+                        />
                     </div>
 
                     <Button

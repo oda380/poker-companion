@@ -1,4 +1,4 @@
-import { TableState, HandState, Player, GameVariant, Street, Action, Pot } from "../types";
+import { TableState, HandState, Player, GameVariant, Street, Action, Pot, PlayerHandState } from "../types";
 import { createDeck, shuffleDeck, dealCards } from "./deck";
 import { calculatePots } from "./pot-calculator";
 
@@ -121,12 +121,13 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
     let playerHands: PlayerHandState[] = [];
     let firstToAct: string = "";
     if (gameVariant === "fiveCardStud") {
-        // Initialize empty hands for each player
+        // Initialize hands with one placeholder hole card (face-down, unknown)
+        // Dealer confirms dealing these without seeing them
         playerHands = activePlayers.map(p => ({
             playerId: p.id,
-            cards: []
+            cards: [{ code: "", faceUp: false }] // Placeholder hole card
         }));
-        // Sentinel to trigger first Stud card dealing
+        // Sentinel to trigger first Stud card dealing (second card, face-up)
         firstToAct = "WAITING_FOR_STUD_FIRST";
     } else { // Texas Hold'em
         const cardsToDeal = 2; // Hold'em initial two cards (both down)

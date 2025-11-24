@@ -9,12 +9,21 @@ interface CardKeyboardProps {
 }
 
 export function CardKeyboard({ onCardSelect, usedCards = [] }: CardKeyboardProps) {
-    const suits = ["h", "d", "c", "s"]; // hearts, diamonds, clubs, spades
-    const ranks = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const suits = ["s", "h", "d", "c"]; // spades, hearts, diamonds, clubs
+    const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
+
+    const [selectedRank, setSelectedRank] = useState<string | null>(null);
     const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
-    const handleCardClick = (rank: string, suit: string) => {
-        const cardCode = rank + suit;
+    const handleRankClick = (rank: string) => {
+        setSelectedRank(rank);
+        setDuplicateWarning(null);
+    };
+
+    const handleSuitClick = (suit: string) => {
+        if (!selectedRank) return;
+
+        const cardCode = selectedRank + suit;
 
         if (usedCards.includes(cardCode)) {
             setDuplicateWarning(`${cardCode} is already in play!`);
@@ -24,6 +33,7 @@ export function CardKeyboard({ onCardSelect, usedCards = [] }: CardKeyboardProps
 
         setDuplicateWarning(null);
         onCardSelect(cardCode);
+        setSelectedRank(null); // Reset for next selection
     };
 
     const suitSymbols: Record<string, string> = {
@@ -43,37 +53,59 @@ export function CardKeyboard({ onCardSelect, usedCards = [] }: CardKeyboardProps
     return (
         <div className="space-y-2">
             {duplicateWarning && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" className="py-2">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{duplicateWarning}</AlertDescription>
                 </Alert>
             )}
 
-            <div className="grid grid-cols-4 gap-1">
-                {suits.map((suit) => (
-                    <div key={suit} className="space-y-1">
-                        <div className={`text-center text-2xl ${suitColors[suit]}`}>
-                            {suitSymbols[suit]}
-                        </div>
-                        {ranks.map((rank) => {
-                            const cardCode = rank + suit;
-                            const isUsed = usedCards.includes(cardCode);
+            <div className="flex gap-3">
+                {/* Left column: Ranks */}
+                <div className="flex-1">
+                    <div className="text-xs font-medium text-muted-foreground mb-1 text-center">
+                        Select Rank
+                    </div>
+                    <div className="grid grid-cols-4 gap-1">
+                        {ranks.map((rank) => (
+                            <Button
+                                key={rank}
+                                variant={selectedRank === rank ? "default" : "outline"}
+                                size="sm"
+                                className="h-9 text-sm font-bold"
+                                onClick={() => handleRankClick(rank)}
+                            >
+                                {rank}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Right column: Suits */}
+                <div className="w-20">
+                    <div className="text-xs font-medium text-muted-foreground mb-1 text-center">
+                        Suit
+                    </div>
+                    <div className="space-y-1">
+                        {suits.map((suit) => {
+                            const cardCode = selectedRank ? selectedRank + suit : "";
+                            const isUsed = cardCode ? usedCards.includes(cardCode) : false;
+
                             return (
                                 <Button
-                                    key={cardCode}
-                                    variant={isUsed ? "secondary" : "outline"}
-                                    size="sm"
-                                    className={`w-full h-8 text-xs font-bold ${suitColors[suit]} ${isUsed ? 'opacity-50 cursor-not-allowed' : ''
-                                        }`}
-                                    onClick={() => handleCardClick(rank, suit)}
-                                    disabled={isUsed}
+                                    key={suit}
+                                    variant="outline"
+                                    size="lg"
+                                    className={`w-full h-12 text-3xl ${suitColors[suit]} ${!selectedRank ? 'opacity-30' : ''
+                                        } ${isUsed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onClick={() => handleSuitClick(suit)}
+                                    disabled={!selectedRank || isUsed}
                                 >
-                                    {rank}
+                                    {suitSymbols[suit]}
                                 </Button>
                             );
                         })}
                     </div>
-                ))}
+                </div>
             </div>
         </div>
     );
