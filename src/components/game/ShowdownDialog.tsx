@@ -128,6 +128,10 @@ export function ShowdownDialog() {
     const handleConfirmResults = () => {
         if (!currentHand || !evaluationResult) return;
 
+        // Calculate total pot
+        const totalPot = (currentHand.pots?.reduce((sum, pot) => sum + pot.amount, 0) || 0) +
+            Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
+
         // Award pot to winners
         const potPerWinner = totalPot / evaluationResult.winners.length;
 

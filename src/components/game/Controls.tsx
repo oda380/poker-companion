@@ -33,11 +33,11 @@ export function Controls() {
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur border-t grid grid-cols-3 gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/98 to-transparent backdrop-blur-lg border-t border-white/10 grid grid-cols-3 gap-3 shadow-2xl">
             <Button
                 variant="secondary"
                 size="lg"
-                className="h-16 text-xl font-bold bg-red-100 hover:bg-red-200 text-red-900 border-red-200"
+                className="h-16 text-xl font-bold bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/30 active:scale-95 transition-transform"
                 onClick={() => playerAction("fold")}
             >
                 Fold
@@ -46,7 +46,7 @@ export function Controls() {
             <Button
                 variant="outline"
                 size="lg"
-                className="h-16 text-xl font-bold"
+                className="h-16 text-xl font-bold bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 active:scale-95 transition-transform"
                 onClick={() => playerAction("check")}
             >
                 Check
@@ -54,7 +54,7 @@ export function Controls() {
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
-                    <Button size="lg" className="h-16 text-xl font-bold bg-green-600 hover:bg-green-700">
+                    <Button size="lg" className="h-16 text-xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
                         {currentBet > 0 ? "Call / Raise" : "Bet"}
                     </Button>
                 </SheetTrigger>

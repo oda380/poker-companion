@@ -92,10 +92,20 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
 
     // Apply Blinds (Hold'em)
     if (gameVariant === "texasHoldem" && config.smallBlind && config.bigBlind) {
-        // Find SB and BB positions (left of dealer)
+        // Find SB and BB positions
         const dealerIndex = activePlayers.findIndex(p => p.seat === dealerSeat);
-        const sbIndex = (dealerIndex + 1) % activePlayers.length;
-        const bbIndex = (dealerIndex + 2) % activePlayers.length;
+        let sbIndex: number;
+        let bbIndex: number;
+
+        if (activePlayers.length === 2) {
+            // Heads-up: Dealer is SB, Non-Dealer is BB
+            sbIndex = dealerIndex;
+            bbIndex = (dealerIndex + 1) % activePlayers.length;
+        } else {
+            // 3+ Players: Standard (Left of Dealer is SB)
+            sbIndex = (dealerIndex + 1) % activePlayers.length;
+            bbIndex = (dealerIndex + 2) % activePlayers.length;
+        }
 
         const sbPlayer = activePlayers[sbIndex];
         const bbPlayer = activePlayers[bbIndex];
@@ -127,8 +137,8 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
             playerId: p.id,
             cards: [{ code: "", faceUp: false }] // Placeholder hole card
         }));
-        // Sentinel to trigger first Stud card dealing (second card, face-up)
-        firstToAct = "WAITING_FOR_STUD_FIRST";
+        // Trigger confirmation dialog after first cards are dealt
+        firstToAct = "WAITING_FOR_DEAL_CONFIRM";
     } else { // Texas Hold'em
         const cardsToDeal = 2; // Hold'em initial two cards (both down)
         playerHands = activePlayers.map(p => {
@@ -139,10 +149,8 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
                 cards: dealt.map(c => ({ code: c, faceUp: false }))
             };
         });
-        // Determine first to act (UTG) for Hold'em
-        const dealerIndex = activePlayers.findIndex(p => p.seat === dealerSeat);
-        const utg = (dealerIndex + 3) % activePlayers.length; // UTG is left of BB
-        firstToAct = activePlayers[utg].id;
+        // Trigger confirmation dialog after dealing hole cards
+        firstToAct = "WAITING_FOR_DEAL_CONFIRM";
     }
 
     const hand: HandState = {
@@ -292,7 +300,10 @@ export function processAction(table: TableState, actionType: Action["bettingType
     }
 
     // Check if betting round is complete
-    // Round is complete when all active players have committed the same amount
+    // Round is complete when:
+    // 1. All active players have committed the same amount, AND
+    // 2. Action has returned to the last aggressor (or everyone has acted if no aggressor)
+
     const activePlayersInRound = updatedPlayers.filter(p =>
         !p.isSittingOut && p.status === "active"
     );
@@ -301,19 +312,60 @@ export function processAction(table: TableState, actionType: Action["bettingType
         (newPerPlayerCommitted[p.id] || 0) === newCurrentBet
     );
 
+    // Get all actions for this street including the current one
+    const actionsThisStreet = [...hand.actions, newAction].filter(a => a.street === hand.currentStreet);
+    const actedPlayerIds = new Set(actionsThisStreet.map(a => a.playerId));
+
+    // Check if everyone has acted
+    // Note: Blinds are not recorded as actions, so Preflop BB must act (check/raise) to satisfy this
+    const allHaveActed = activePlayersInRound.every(p => actedPlayerIds.has(p.id));
+
+    const roundComplete = allCommitmentsEqual && allHaveActed && activePlayersInRound.length > 0;
+
+    console.log("--- Round Completion Check ---");
+    console.log("Street:", hand.currentStreet);
+    console.log("Active Players:", activePlayersInRound.map(p => p.id));
+    console.log("Acted Players:", Array.from(actedPlayerIds));
+    console.log("All Commitments Equal:", allCommitmentsEqual);
+    console.log("All Have Acted:", allHaveActed);
+    console.log("Round Complete Result:", roundComplete);
+
     let newActivePlayerId = nextPlayer.id;
 
-    // If all active players have matched the current bet, betting round is complete
-    if (allCommitmentsEqual && activePlayersInRound.length > 0) {
+    // If betting round is complete, progress to next street or showdown
+    if (roundComplete) {
         // Betting round complete - progress to next street or showdown
         const nextStreet = getNextStreet(hand.currentStreet, hand.gameVariant);
+        console.log("Round Complete! Next Street:", nextStreet);
+
+        // Calculate pot from this round
+        const roundPot = Object.values(newPerPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
+
+        // Update pots
+        // For MVP, we'll just add to the first pot or create one
+        let newPots = [...hand.pots];
+        if (newPots.length === 0) {
+            newPots = [{
+                id: generateId(),
+                amount: roundPot,
+                eligiblePlayerIds: activePlayersInRound.map(p => p.id)
+            }];
+        } else {
+            // Add to main pot
+            newPots[0] = {
+                ...newPots[0],
+                amount: newPots[0].amount + roundPot
+            };
+        }
 
         if (nextStreet === "showdown") {
             // Ready for showdown
             newActivePlayerId = ""; // Empty string indicates showdown phase
+            console.log("Next Street is Showdown");
         } else {
             // Progress to next street
             if (hand.gameVariant === "texasHoldem") {
+                console.log("Returning WAITING_FOR_CARDS");
                 // Hold'em: Deal community cards
                 return {
                     ...table,
@@ -321,28 +373,33 @@ export function processAction(table: TableState, actionType: Action["bettingType
                     currentHand: {
                         ...hand,
                         currentStreet: nextStreet,
-                        currentBet: 0,
-                        perPlayerCommitted: {},
                         actions: [...hand.actions, newAction],
+                        perPlayerCommitted: {}, // Reset for new street
+                        pots: newPots, // Update accumulated pot
+                        currentBet: 0, // Reset current bet for new street
                         activePlayerId: "WAITING_FOR_CARDS" // Trigger community card dialog
                     }
                 };
             } else {
-                // Stud: Deal individual cards to each player
+                console.log("Returning WAITING_FOR_STUD_CARD");
+                // Stud: Deal next card
                 return {
                     ...table,
                     players: updatedPlayers,
                     currentHand: {
                         ...hand,
                         currentStreet: nextStreet,
-                        currentBet: 0,
-                        perPlayerCommitted: {},
                         actions: [...hand.actions, newAction],
+                        perPlayerCommitted: {}, // Reset for new street
+                        pots: newPots, // Update accumulated pot
+                        currentBet: 0, // Reset current bet for new street
                         activePlayerId: "WAITING_FOR_STUD_CARD" // Trigger Stud card dialog
                     }
                 };
             }
         }
+    } else {
+        console.log("Round NOT Complete. Next Player:", newActivePlayerId);
     }
     // The following auto-showdown logic is commented out for MVP
     /*

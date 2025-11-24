@@ -12,6 +12,7 @@ import { DealerSelectionDialog } from "@/components/game/DealerSelectionDialog";
 import { CommunityCardDialog } from "@/components/game/CommunityCardDialog";
 import { StudCardDialog } from "@/components/game/StudCardDialog";
 import { Settings, History, RotateCcw, Home, Users, Menu } from "lucide-react";
+import { InitialDealDialog } from "@/components/game/InitialDealDialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -74,29 +75,38 @@ export default function TablePage() {
             </header>
 
             {/* Game Area */}
-            <main className="flex-1 overflow-y-auto pb-32">
+            <main className="flex-1 overflow-y-auto pb-32 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
                 {/* Pot Display */}
-                <div className="p-6 text-center bg-muted/30 sticky top-0 z-0">
-                    <div className="text-sm text-muted-foreground uppercase tracking-wider">Total Pot</div>
-                    <div className="text-4xl font-bold text-primary mt-1">
-                        {currentHand
-                            ? Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0)
-                            : 0
-                        }
+                <div className="p-8 text-center sticky top-0 z-0 bg-gradient-to-b from-slate-900/95 to-transparent backdrop-blur-sm">
+                    <div className="relative inline-block">
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 bg-gradient-radial from-amber-500/20 to-transparent blur-2xl" />
+
+                        <div className="relative">
+                            <div className="text-xs text-amber-400/80 uppercase tracking-widest font-semibold mb-2">Total Pot</div>
+                            <div className="text-5xl font-black bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 bg-clip-text text-transparent drop-shadow-lg">
+                                ${currentHand
+                                    ? (currentHand.pots.reduce((sum, pot) => sum + pot.amount, 0) +
+                                        Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0))
+                                    : 0
+                                }
+                            </div>
+                        </div>
                     </div>
+
                     {currentHand && (
-                        <div className="text-sm text-muted-foreground mt-2">
-                            Current Bet: {currentHand.currentBet} • {currentHand.currentStreet.toUpperCase()}
+                        <div className="text-sm text-slate-400 mt-4 font-medium">
+                            Current Bet: <span className="text-emerald-400 font-bold">${currentHand.currentBet}</span> • {currentHand.currentStreet.toUpperCase()}
                         </div>
                     )}
 
                     {/* Board Cards */}
                     {currentHand && currentHand.board.length > 0 && (
-                        <div className="mt-4 flex justify-center gap-2">
+                        <div className="mt-6 flex justify-center gap-2">
                             {currentHand.board.map((card, i) => (
                                 <div
                                     key={i}
-                                    className="w-16 h-22 bg-white rounded border-2 border-gray-300 shadow-lg flex items-center justify-center text-2xl font-bold text-black"
+                                    className="w-16 h-22 bg-white rounded-lg border-2 border-gray-300 shadow-xl flex items-center justify-center text-2xl font-bold text-black"
                                 >
                                     {card}
                                 </div>
@@ -129,9 +139,11 @@ export default function TablePage() {
                         </Button>
                     </div>
                 )}
+                {/* Stud: Auto-trigger first card dealing */}
                 {currentHand && currentHand.gameVariant === "fiveCardStud" && currentHand.activePlayerId === "WAITING_FOR_STUD_FIRST" && (
                     <div className="p-4 flex justify-center">
-                        <Button size="lg" variant="outline" onClick={() => {
+                        <Button size="lg" className="w-full max-w-xs h-14 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800" onClick={() => {
+                            // Trigger card dealing dialog
                             usePokerStore.setState(state => ({
                                 ...state,
                                 currentHand: state.currentHand ? {
@@ -140,7 +152,7 @@ export default function TablePage() {
                                 } : undefined
                             }));
                         }}>
-                            Deal 1st Cards
+                            Deal Initial Cards
                         </Button>
                     </div>
                 )}
@@ -157,6 +169,9 @@ export default function TablePage() {
 
             {/* Stud Card Input Dialog */}
             <StudCardDialog />
+
+            {/* Initial Deal Confirmation Dialog */}
+            <InitialDealDialog />
 
             {/* Dealer Selection Dialog */}
             <DealerSelectionDialog onSelectDealer={(seat) => startNewHand(seat)} />
