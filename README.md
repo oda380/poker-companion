@@ -9,11 +9,11 @@ A modern, premium poker table management application built with Next.js. Track h
 - **5-Card Stud**: Classic stud poker with face-up and face-down card tracking
 
 ### Premium Design
-- 🎨 **Modern UI**: Dark theme with vibrant accents and smooth animations
-- 🎴 **Realistic Cards**: Professional card design with suit symbols, colors, and textures
-- 🪙 **3D Chip Visualization**: Color-coded chips (Red $5, Green $25, Black $100, Purple $500, Gold $1000)
-- 🎯 **Dealer Button**: Realistic white acrylic puck design
-- ✨ **Smooth Animations**: Framer Motion-powered transitions and effects
+- 🎨 **Modern UI**: Dark theme with vibrant accents and smooth transitions
+- 🎴 **Polished Cards**: Professional card design with suit symbols, colors, and paper textures
+- 🪙 **Visual Chip Stacks**: Color-coded chips with depth effects (Red $5, Green $25, Black $100, Purple $500, Gold $1000)
+- 🎯 **Dealer Button**: Realistic white puck design with beveled edges
+- ✨ **Smooth Animations**: Framer Motion-powered transitions and layout animations
 
 ### Game Management
 - **Player Tracking**: Manage player stacks, seats, and statuses

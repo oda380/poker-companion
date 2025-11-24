@@ -16,6 +16,7 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
     return (
         <motion.div
             layout
+            id={`player-row-${player.id}`}
             className={cn(
                 "p-5 border-b flex justify-between items-center transition-all duration-300 relative rounded-lg mx-2 my-1",
                 isActive && "bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/20",
@@ -31,14 +32,28 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
 
             <div className="flex items-center gap-4">
                 <div className="relative">
-                    <div className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg transition-all",
-                        isActive
-                            ? "bg-gradient-to-br from-emerald-500 to-emerald-700 ring-4 ring-emerald-500/30"
-                            : "bg-gradient-to-br from-gray-600 to-gray-800"
-                    )}>
+                    <motion.div
+                        className={cn(
+                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg transition-colors duration-300",
+                            isActive
+                                ? "bg-gradient-to-br from-emerald-500 to-emerald-700 ring-2 ring-emerald-500"
+                                : "bg-gradient-to-br from-gray-600 to-gray-800"
+                        )}
+                        animate={isActive ? {
+                            scale: [1, 1.05, 1],
+                            boxShadow: [
+                                "0 0 0 0px rgba(16, 185, 129, 0.6)",
+                                "0 0 0 8px rgba(16, 185, 129, 0)"
+                            ]
+                        } : { scale: 1, boxShadow: "none" }}
+                        transition={isActive ? {
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        } : { duration: 0.3 }}
+                    >
                         {player.seat}
-                    </div>
+                    </motion.div>
                     {isDealer && (
                         <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-b from-white to-gray-200 border border-gray-300 shadow-[0_2px_4px_rgba(0,0,0,0.3)] flex items-center justify-center z-10">
                             <div className="text-black text-xs font-black tracking-wider">D</div>

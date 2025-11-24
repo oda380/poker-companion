@@ -13,6 +13,7 @@ import { CommunityCardDialog } from "@/components/game/CommunityCardDialog";
 import { StudCardDialog } from "@/components/game/StudCardDialog";
 import { Settings, History, RotateCcw, Home, Users, Menu } from "lucide-react";
 import { InitialDealDialog } from "@/components/game/InitialDealDialog";
+import { ChipAnimation } from "@/components/game/ChipAnimation";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -78,7 +79,7 @@ export default function TablePage() {
             <main className="flex-1 overflow-y-auto pb-32 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
                 {/* Pot Display */}
                 <div className="p-8 text-center sticky top-0 z-0 bg-gradient-to-b from-slate-900/95 to-transparent backdrop-blur-sm">
-                    <div className="relative inline-block">
+                    <div id="pot-display" className="relative inline-block">
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-gradient-radial from-amber-500/20 to-transparent blur-2xl" />
 
@@ -175,6 +176,9 @@ export default function TablePage() {
 
             {/* Dealer Selection Dialog */}
             <DealerSelectionDialog onSelectDealer={(seat) => startNewHand(seat)} />
+
+            {/* Chip Toss Animation Layer */}
+            <ChipAnimation />
         </div>
     );
 }
