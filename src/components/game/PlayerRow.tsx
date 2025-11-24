@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Card } from "./Card";
+import { ChipStack } from "./Chip";
 
 interface PlayerRowProps {
     player: Player;
@@ -39,17 +40,17 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                         {player.seat}
                     </div>
                     {isDealer && (
-                        <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-background shadow-lg flex items-center justify-center">
-                            <div className="text-white text-xs font-bold">D</div>
+                        <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-b from-white to-gray-200 border border-gray-300 shadow-[0_2px_4px_rgba(0,0,0,0.3)] flex items-center justify-center z-10">
+                            <div className="text-black text-xs font-black tracking-wider">D</div>
+                            {/* Bevel effect */}
+                            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/80 to-transparent pointer-events-none" />
                         </div>
                     )}
                 </div>
 
                 <div>
-                    <div className="font-bold text-lg leading-none">{player.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1.5 font-semibold">
-                        <span className="text-emerald-500">$</span>{player.stack}
-                    </div>
+                    <div className="font-bold text-lg leading-none mb-1 text-white">{player.name}</div>
+                    <ChipStack amount={player.stack} />
                 </div>
             </div>
 

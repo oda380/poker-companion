@@ -46,7 +46,7 @@ export function Controls() {
             <Button
                 variant="outline"
                 size="lg"
-                className="h-16 text-xl font-bold bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 active:scale-95 transition-transform"
+                className="h-16 text-xl font-bold bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white active:scale-95 transition-transform"
                 onClick={() => playerAction("check")}
             >
                 Check
