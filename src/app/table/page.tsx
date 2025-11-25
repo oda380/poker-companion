@@ -41,12 +41,27 @@ export default function TablePage() {
             return;
         }
 
+        // Detect if running in Chrome on iOS
+        const isChrome = /CriOS/.test(navigator.userAgent);
+
         // Reset scroll position of main content area
         // This fixes touch offset issues in Stud where the scrollable main element
         // can have cached scroll position causing touch layer desync on iOS
         const mainElement = document.querySelector('main');
         if (mainElement) {
             mainElement.scrollTop = 0;
+        }
+
+        // For Chrome on iOS, we need more aggressive viewport resets
+        if (isChrome) {
+            // Force window scroll reset
+            window.scrollTo(0, 0);
+
+            // Force a layout recalculation
+            setTimeout(() => {
+                const _ = document.body.offsetHeight;
+                window.dispatchEvent(new Event('resize'));
+            }, 50);
         }
 
         // Cleanup on unmount
