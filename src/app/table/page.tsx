@@ -152,10 +152,14 @@ export default function TablePage() {
 
                     {currentHand && (
                         <div className="mt-6 flex items-center justify-center gap-3 text-sm font-medium">
-                            <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                Bet: ${currentHand.currentBet}
-                            </div>
-                            <div className="w-1 h-1 rounded-full bg-slate-600" />
+                            {currentHand.gameVariant === "texasHoldem" && (
+                                <>
+                                    <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                                        Bet: ${currentHand.currentBet}
+                                    </div>
+                                    <div className="w-1 h-1 rounded-full bg-slate-600" />
+                                </>
+                            )}
                             <div className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 uppercase tracking-wider text-xs">
                                 {currentHand.currentStreet}
                             </div>
