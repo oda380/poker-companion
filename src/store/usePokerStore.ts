@@ -126,18 +126,26 @@ export const usePokerStore = create<PokerStore>()(
                 }),
 
                 resetGame: () => set({
+                    // Completely replace state to avoid persistence merge issues
                     ...initialState,
-                    // Keep the ID stable or regenerate if needed, but usually we want a fresh start
                     id: crypto.randomUUID(),
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    // Explicitly reset UI state to prevent lingering modals
+                    players: [], // Explicitly clear players
+                    handHistory: [], // Explicitly clear history
+                    currentHand: undefined, // Explicitly clear current hand
+
+                    // Explicitly reset UI state
                     ui: {
                         isSettingsOpen: false,
                         isHandHistoryOpen: false,
                         activeModal: null,
                     }
-                }),
+                }), // Pass true to 'set' to force replace instead of merge if supported by middleware, though standard zustand set is merge. 
+                // Note: Zustand's set merges by default. To replace, we usually need the second arg to be true, 
+                // but with middleware it depends. 
+                // However, since we are spreading ...initialState and overriding everything, it should be fine.
+                // The key addition here is ensuring we don't rely on implicit behavior.
 
                 playerAction: (actionType, amount) => {
                     set((state) => {

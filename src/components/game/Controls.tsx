@@ -68,7 +68,7 @@ export function Controls() {
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
                 <SheetTrigger asChild>
-                    <Button size="lg" className="h-16 text-xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform">
+                    <Button size="lg" className="h-16 text-xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform text-white dark:text-white">
                         {currentBet > 0 ? "Call / Raise" : "Bet"}
                     </Button>
                 </SheetTrigger>
