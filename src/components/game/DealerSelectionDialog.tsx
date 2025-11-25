@@ -1,7 +1,7 @@
 import { usePokerStore } from "@/store/usePokerStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface DealerSelectionDialogProps {
     onSelectDealer: (seat: number) => boolean;
@@ -15,6 +15,14 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
 
     // Only show for first hand and before hand starts
     const isFirstHand = handHistory.length === 0 && !currentHand;
+
+    // Reset selection when dialog opens (isFirstHand becomes true)
+    useEffect(() => {
+        if (isFirstHand) {
+            console.log("DealerSelectionDialog: Resetting selectedSeat");
+            setSelectedSeat(null);
+        }
+    }, [isFirstHand]);
 
     const handleConfirm = () => {
         if (selectedSeat !== null) {
