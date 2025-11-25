@@ -125,23 +125,33 @@ export const usePokerStore = create<PokerStore>()(
                     };
                 }),
 
-                resetGame: () => set({
-                    // Completely replace state to avoid persistence merge issues
-                    ...initialState,
-                    id: crypto.randomUUID(),
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    players: [], // Explicitly clear players
-                    handHistory: [], // Explicitly clear history
-                    currentHand: undefined, // Explicitly clear current hand
-
-                    // Explicitly reset UI state
-                    ui: {
-                        isSettingsOpen: false,
-                        isHandHistoryOpen: false,
-                        activeModal: null,
+                resetGame: () => {
+                    // Force cleanup of any lingering Radix UI body locks
+                    if (typeof document !== 'undefined') {
+                        document.body.style.pointerEvents = '';
+                        document.body.style.overflow = '';
+                        document.body.removeAttribute('style');
+                        document.body.removeAttribute('data-scroll-locked');
                     }
-                }), // Pass true to 'set' to force replace instead of merge if supported by middleware, though standard zustand set is merge. 
+
+                    set({
+                        // Completely replace state to avoid persistence merge issues
+                        ...initialState,
+                        id: crypto.randomUUID(),
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        players: [], // Explicitly clear players
+                        handHistory: [], // Explicitly clear history
+                        currentHand: undefined, // Explicitly clear current hand
+
+                        // Explicitly reset UI state
+                        ui: {
+                            isSettingsOpen: false,
+                            isHandHistoryOpen: false,
+                            activeModal: null,
+                        }
+                    });
+                },
                 // Note: Zustand's set merges by default. To replace, we usually need the second arg to be true, 
                 // but with middleware it depends. 
                 // However, since we are spreading ...initialState and overriding everything, it should be fine.

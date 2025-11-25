@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePokerStore } from "@/store/usePokerStore";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,24 @@ export default function SetupPage() {
     const router = useRouter();
     const setTableConfig = usePokerStore((state) => state.setTableConfig);
     const addPlayer = usePokerStore((state) => state.addPlayer);
+
+    // Force cleanup of any lingering locks when entering setup
+    useEffect(() => {
+        document.body.style.pointerEvents = '';
+        document.body.style.overflow = '';
+        document.body.removeAttribute('style');
+        document.body.removeAttribute('data-scroll-locked');
+
+        // Also ensure store UI state is clean
+        usePokerStore.setState(state => ({
+            ...state,
+            ui: {
+                isSettingsOpen: false,
+                isHandHistoryOpen: false,
+                activeModal: null
+            }
+        }));
+    }, []);
 
     const [tableName, setTableName] = useState("Friday Night Poker");
     const [variant, setVariant] = useState<GameVariant>("texasHoldem");

@@ -38,6 +38,26 @@ export default function TablePage() {
         if (players.length === 0) {
             router.push("/setup");
         }
+
+        // Cleanup on unmount
+        return () => {
+            // Close any open modals in the store to prevent them from trying to restore focus/locks
+            usePokerStore.setState(state => ({
+                ...state,
+                ui: {
+                    ...state.ui,
+                    isSettingsOpen: false,
+                    isHandHistoryOpen: false,
+                    activeModal: null
+                }
+            }));
+
+            // Force body cleanup
+            document.body.style.pointerEvents = '';
+            document.body.style.overflow = '';
+            document.body.removeAttribute('style');
+            document.body.removeAttribute('data-scroll-locked');
+        };
     }, [players, router]);
 
     if (players.length === 0) return null;
