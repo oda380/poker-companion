@@ -40,6 +40,23 @@ export default function TablePage() {
             router.push("/setup");
         }
 
+        // Force iOS viewport recalculation by focusing a hidden input
+        // This mimics the user tapping an input field
+        const hiddenInput = document.createElement('input');
+        hiddenInput.style.position = 'absolute';
+        hiddenInput.style.opacity = '0';
+        hiddenInput.style.pointerEvents = 'none';
+        hiddenInput.style.left = '-9999px';
+        document.body.appendChild(hiddenInput);
+
+        setTimeout(() => {
+            hiddenInput.focus();
+            setTimeout(() => {
+                hiddenInput.blur();
+                document.body.removeChild(hiddenInput);
+            }, 50);
+        }, 100);
+
         // Cleanup on unmount
         return () => {
             // Close any open modals in the store to prevent them from trying to restore focus/locks
