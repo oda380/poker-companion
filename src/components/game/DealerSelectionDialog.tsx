@@ -21,6 +21,12 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
         if (isFirstHand) {
             console.log("DealerSelectionDialog: Resetting selectedSeat");
             setSelectedSeat(null);
+
+            // Force layout recalculation on mobile to fix touch offset
+            // Reading offsetHeight triggers a reflow
+            setTimeout(() => {
+                const _ = document.body.offsetHeight;
+            }, 0);
         }
     }, [isFirstHand]);
 
