@@ -44,12 +44,12 @@ export default function SetupPage() {
     const tableNameInputRef = useRef<HTMLInputElement>(null);
 
     // Auto-focus table name input to force iOS viewport recalculation
+    // This prevents touch offset issues by ensuring iOS recalculates viewport on setup
     useEffect(() => {
-        // Small delay to ensure DOM is ready
         const timer = setTimeout(() => {
             tableNameInputRef.current?.focus();
-            // Immediately blur to not show keyboard, but viewport is recalculated
-            tableNameInputRef.current?.blur();
+            // Select all text so user can easily replace it
+            tableNameInputRef.current?.select();
         }, 100);
         return () => clearTimeout(timer);
     }, []);

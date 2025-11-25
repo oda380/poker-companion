@@ -24,46 +24,10 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
             setSelectedSeat(null);
             setIsReady(false);
 
-            // Force layout recalculation on mobile to fix touch offset
-            // We use the hidden input hack here because it's the only reliable way to fix iOS viewport issues
-            // when the layout changes (e.g. changing player count)
-            const hiddenInput = document.createElement('input');
-            hiddenInput.style.position = 'absolute';
-            hiddenInput.style.opacity = '0';
-            hiddenInput.style.pointerEvents = 'none';
-            hiddenInput.style.left = '-9999px';
-            document.body.appendChild(hiddenInput);
-
+            // Small delay before showing content to ensure layout completes
             setTimeout(() => {
-                // 1. Force full document reflow by manipulating documentElement
-                const originalHeight = document.documentElement.style.height;
-                document.documentElement.style.height = '100.1vh';
-                const _ = document.documentElement.offsetHeight; // Trigger reflow
-                document.documentElement.style.height = originalHeight;
-
-                // 2. Trigger input focus (forces viewport recalc)
-                hiddenInput.focus();
-
-                setTimeout(() => {
-                    hiddenInput.blur();
-                    if (document.body.contains(hiddenInput)) {
-                        document.body.removeChild(hiddenInput);
-                    }
-
-                    // 3. Force resize event
-                    window.dispatchEvent(new Event('resize'));
-
-                    // 4. Force visual viewport update if available
-                    if (window.visualViewport) {
-                        window.visualViewport.addEventListener('resize', () => { }, { once: true });
-                    }
-
-                    // Wait before showing content
-                    setTimeout(() => {
-                        setIsReady(true);
-                    }, 150);
-                }, 150);
-            }, 200);
+                setIsReady(true);
+            }, 100);
         } else {
             setIsReady(false);
         }

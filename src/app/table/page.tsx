@@ -41,38 +41,8 @@ export default function TablePage() {
             return;
         }
 
-        // Force iOS viewport recalculation by focusing a hidden input
-        // This mimics the user tapping an input field
-        const hiddenInput = document.createElement('input');
-        hiddenInput.style.position = 'absolute';
-        hiddenInput.style.opacity = '0';
-        hiddenInput.style.pointerEvents = 'none';
-        hiddenInput.style.left = '-9999px';
-        document.body.appendChild(hiddenInput);
-
-        let timer1: NodeJS.Timeout | undefined;
-        let timer2: NodeJS.Timeout | undefined;
-
-        timer1 = setTimeout(() => {
-            if (document.body.contains(hiddenInput)) {
-                hiddenInput.focus();
-                timer2 = setTimeout(() => {
-                    if (document.body.contains(hiddenInput)) {
-                        hiddenInput.blur();
-                        document.body.removeChild(hiddenInput);
-                    }
-                }, 50);
-            }
-        }, 100);
-
         // Cleanup on unmount
         return () => {
-            if (timer1) clearTimeout(timer1);
-            if (timer2) clearTimeout(timer2);
-            if (document.body.contains(hiddenInput)) {
-                document.body.removeChild(hiddenInput);
-            }
-
             // Close any open modals in the store to prevent them from trying to restore focus/locks
             usePokerStore.setState(state => ({
                 ...state,
