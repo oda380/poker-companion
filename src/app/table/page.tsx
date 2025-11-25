@@ -38,6 +38,7 @@ export default function TablePage() {
     useEffect(() => {
         if (players.length === 0) {
             router.push("/setup");
+            return;
         }
 
         // Force iOS viewport recalculation by focusing a hidden input
@@ -49,16 +50,29 @@ export default function TablePage() {
         hiddenInput.style.left = '-9999px';
         document.body.appendChild(hiddenInput);
 
-        setTimeout(() => {
-            hiddenInput.focus();
-            setTimeout(() => {
-                hiddenInput.blur();
-                document.body.removeChild(hiddenInput);
-            }, 50);
+        let timer1: NodeJS.Timeout | undefined;
+        let timer2: NodeJS.Timeout | undefined;
+
+        timer1 = setTimeout(() => {
+            if (document.body.contains(hiddenInput)) {
+                hiddenInput.focus();
+                timer2 = setTimeout(() => {
+                    if (document.body.contains(hiddenInput)) {
+                        hiddenInput.blur();
+                        document.body.removeChild(hiddenInput);
+                    }
+                }, 50);
+            }
         }, 100);
 
         // Cleanup on unmount
         return () => {
+            if (timer1) clearTimeout(timer1);
+            if (timer2) clearTimeout(timer2);
+            if (document.body.contains(hiddenInput)) {
+                document.body.removeChild(hiddenInput);
+            }
+
             // Close any open modals in the store to prevent them from trying to restore focus/locks
             usePokerStore.setState(state => ({
                 ...state,
