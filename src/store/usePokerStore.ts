@@ -13,6 +13,7 @@ interface PokerStore extends TableState {
     // Game Flow Actions
     startNewHand: (dealerSeat?: number) => void;
     dealCards: () => void; // For Stud or Hold'em streets
+    revealHand: (playerId: string, cards: string[]) => void;
     resetGame: () => void;
 
     // Betting Actions
@@ -98,6 +99,28 @@ export const usePokerStore = create<PokerStore>()(
                     // This might be part of processAction or a separate step?
                     // For now, keep it empty or delegate.
                 },
+
+                revealHand: (playerId, cards) => set((state) => {
+                    if (!state.currentHand) return state;
+
+                    const updatedPlayerHands = state.currentHand.playerHands.map(ph => {
+                        if (ph.playerId === playerId) {
+                            return {
+                                ...ph,
+                                cards: cards.map(code => ({ code, faceUp: true }))
+                            };
+                        }
+                        return ph;
+                    });
+
+                    return {
+                        ...state,
+                        currentHand: {
+                            ...state.currentHand,
+                            playerHands: updatedPlayerHands
+                        }
+                    };
+                }),
 
                 resetGame: () => set({
                     ...initialState,

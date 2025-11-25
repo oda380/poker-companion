@@ -35,18 +35,8 @@ export function ShowdownDialog() {
     // For Stud, extract face-up cards and check if hole cards need input
     const isStud = currentHand.gameVariant === "fiveCardStud";
 
-    // Auto-populate Stud hands on mount (face-up cards only)
-    if (isStud && Object.keys(playerHands).length === 0) {
-        const studHands: Record<string, string[]> = {};
-        currentHand.playerHands.forEach(ph => {
-            // Extract only face-up cards (skip placeholder hole card)
-            const faceUpCards = ph.cards.filter(c => c.faceUp && c.code).map(c => c.code);
-            if (faceUpCards.length > 0) {
-                studHands[ph.playerId] = faceUpCards;
-            }
-        });
-        setPlayerHands(studHands);
-    }
+    // Auto-populate logic removed to ensure hole card input is triggered
+
 
     // Check if we're still inputting hands
     // For Stud: need to input hole card (1 card) for each player
@@ -122,6 +112,8 @@ export function ShowdownDialog() {
                 cards,
                 handDescription: winner?.handDescription || "Lost"
             };
+            // Reveal hand on table
+            usePokerStore.getState().revealHand(playerId, cards);
         });
 
         setEvaluationResult({ winners, allHands });
@@ -257,7 +249,7 @@ export function ShowdownDialog() {
                                             {selectedCards.map((card, i) => (
                                                 <Card key={i} code={card} faceUp={true} size="medium" />
                                             ))}
-                                            {Array.from({ length: 2 - selectedCards.length }).map((_, i) => (
+                                            {Array.from({ length: (isStud ? 1 : 2) - selectedCards.length }).map((_, i) => (
                                                 <div
                                                     key={`empty-${i}`}
                                                     className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
@@ -292,7 +284,7 @@ export function ShowdownDialog() {
                                         <Button
                                             className="flex-1"
                                             onClick={handleConfirmHand}
-                                            disabled={selectedCards.length !== 2}
+                                            disabled={selectedCards.length !== (isStud ? 1 : 2)}
                                         >
                                             Confirm Hand
                                         </Button>
