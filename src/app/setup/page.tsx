@@ -67,22 +67,29 @@ export default function SetupPage() {
     };
 
     const handleStart = () => {
-        // Reset game state completely
-        usePokerStore.getState().resetGame();
+        // Blur any focused input to ensure keyboard closes before navigation
+        // This prevents viewport issues on mobile
+        tableNameInputRef.current?.blur();
 
-        // Set new config
-        setTableConfig(tableName, variant, {
-            smallBlind: variant === "texasHoldem" ? smallBlind : undefined,
-            bigBlind: variant === "texasHoldem" ? bigBlind : undefined,
-            ante: ante > 0 ? ante : undefined,
-        });
+        // Small delay to let keyboard close and viewport reset
+        setTimeout(() => {
+            // Reset game state completely
+            usePokerStore.getState().resetGame();
 
-        // Add initial players with custom names
-        for (let i = 0; i < playerCount; i++) {
-            addPlayer(playerNames[i] || `Player ${i + 1}`, i + 1, startingStack);
-        }
+            // Set new config
+            setTableConfig(tableName, variant, {
+                smallBlind: variant === "texasHoldem" ? smallBlind : undefined,
+                bigBlind: variant === "texasHoldem" ? bigBlind : undefined,
+                ante: ante > 0 ? ante : undefined,
+            });
 
-        router.push("/table");
+            // Add initial players with custom names
+            for (let i = 0; i < playerCount; i++) {
+                addPlayer(playerNames[i] || `Player ${i + 1}`, i + 1, startingStack);
+            }
+
+            router.push("/table");
+        }, 100);
     };
 
     return (
