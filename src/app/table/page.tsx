@@ -55,7 +55,6 @@ export default function TablePage() {
             // Force body cleanup
             document.body.style.pointerEvents = '';
             document.body.style.overflow = '';
-            document.body.removeAttribute('style');
             document.body.removeAttribute('data-scroll-locked');
         };
     }, [players, router]);

@@ -20,7 +20,6 @@ export default function SetupPage() {
     useEffect(() => {
         document.body.style.pointerEvents = '';
         document.body.style.overflow = '';
-        document.body.removeAttribute('style');
         document.body.removeAttribute('data-scroll-locked');
 
         // Also ensure store UI state is clean

@@ -127,10 +127,10 @@ export const usePokerStore = create<PokerStore>()(
 
                 resetGame: () => {
                     // Force cleanup of any lingering Radix UI body locks
+                    // Only remove specific problematic styles to preserve scroll position
                     if (typeof document !== 'undefined') {
                         document.body.style.pointerEvents = '';
                         document.body.style.overflow = '';
-                        document.body.removeAttribute('style');
                         document.body.removeAttribute('data-scroll-locked');
                     }
 
