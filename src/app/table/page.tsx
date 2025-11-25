@@ -87,10 +87,10 @@ export default function TablePage() {
     if (players.length === 0) return null;
 
     return (
-        <div key={tableId} className="min-h-screen bg-background flex flex-col">
+        <div key={tableId} className="h-[100dvh] overflow-hidden bg-background flex flex-col">
             {/* Header */}
             {/* Header */}
-            <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-background/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
+            <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-background/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
