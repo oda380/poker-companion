@@ -25,12 +25,33 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
             setIsReady(false);
 
             // Force layout recalculation on mobile to fix touch offset
-            // Reading offsetHeight triggers a reflow
+            // We use the hidden input hack here because it's the only reliable way to fix iOS viewport issues
+            // when the layout changes (e.g. changing player count)
+            const hiddenInput = document.createElement('input');
+            hiddenInput.style.position = 'absolute';
+            hiddenInput.style.opacity = '0';
+            hiddenInput.style.pointerEvents = 'none';
+            hiddenInput.style.left = '-9999px';
+            document.body.appendChild(hiddenInput);
+
             setTimeout(() => {
+                // 1. Force reflow
                 const _ = document.body.offsetHeight;
-                // Force viewport height recalculation
-                window.dispatchEvent(new Event('resize'));
-                setIsReady(true);
+
+                // 2. Trigger input focus (forces viewport recalc)
+                hiddenInput.focus();
+
+                setTimeout(() => {
+                    hiddenInput.blur();
+                    if (document.body.contains(hiddenInput)) {
+                        document.body.removeChild(hiddenInput);
+                    }
+
+                    // 3. Force resize event as backup
+                    window.dispatchEvent(new Event('resize'));
+
+                    setIsReady(true);
+                }, 50);
             }, 100);
         } else {
             setIsReady(false);
