@@ -13,6 +13,7 @@ interface PokerStore extends TableState {
     // Game Flow Actions
     startNewHand: (dealerSeat?: number) => void;
     dealCards: () => void; // For Stud or Hold'em streets
+    resetGame: () => void;
 
     // Betting Actions
     playerAction: (actionType: "fold" | "check" | "call" | "bet" | "raise" | "allIn", amount?: number) => void;
@@ -67,6 +68,7 @@ export const usePokerStore = create<PokerStore>()(
                             stack,
                             isSittingOut: false,
                             status: "active",
+                            wins: 0,
                         }
                     ]
                 })),
@@ -96,6 +98,15 @@ export const usePokerStore = create<PokerStore>()(
                     // This might be part of processAction or a separate step?
                     // For now, keep it empty or delegate.
                 },
+
+                resetGame: () => set({
+                    ...initialState,
+                    // Keep the ID stable or regenerate if needed, but usually we want a fresh start
+                    id: crypto.randomUUID(),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    // We might want to keep UI state? For now reset everything to be safe
+                }),
 
                 playerAction: (actionType, amount) => {
                     set((state) => {

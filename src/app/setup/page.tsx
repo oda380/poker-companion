@@ -38,16 +38,14 @@ export default function SetupPage() {
     };
 
     const handleStart = () => {
+        // Reset game state completely
+        usePokerStore.getState().resetGame();
+
+        // Set new config
         setTableConfig(tableName, variant, {
             smallBlind: variant === "texasHoldem" ? smallBlind : undefined,
             bigBlind: variant === "texasHoldem" ? bigBlind : undefined,
             ante: ante > 0 ? ante : undefined,
-        });
-
-        // Clear existing players first
-        const existingPlayers = usePokerStore.getState().players;
-        existingPlayers.forEach(p => {
-            usePokerStore.getState().removePlayer(p.id);
         });
 
         // Add initial players with custom names

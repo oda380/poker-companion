@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { usePokerStore } from "@/store/usePokerStore";
 import { Button } from "@/components/ui/button";
 import { PlayerRow } from "@/components/game/PlayerRow";
+import { Card } from "@/components/game/Card";
 import { Controls } from "@/components/game/Controls";
 import { HandHistory } from "@/components/game/HandHistory";
 import { ShowdownDialog } from "@/components/game/ShowdownDialog";
@@ -114,12 +115,13 @@ export default function TablePage() {
                     {currentHand && currentHand.board.length > 0 && (
                         <div className="mt-8 flex justify-center gap-3 perspective-1000">
                             {currentHand.board.map((card, i) => (
-                                <div
+                                <Card
                                     key={i}
-                                    className="w-16 h-24 bg-white rounded-lg border border-gray-200 shadow-2xl flex items-center justify-center text-2xl font-bold text-black transform hover:-translate-y-2 transition-transform duration-300"
-                                >
-                                    {card}
-                                </div>
+                                    code={card}
+                                    faceUp={true}
+                                    size="medium"
+                                    className="shadow-2xl hover:-translate-y-2 transition-transform duration-300"
+                                />
                             ))}
                         </div>
                     )}

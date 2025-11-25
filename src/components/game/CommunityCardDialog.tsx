@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
 import { useState } from "react";
+import { Card } from "./Card";
 
 export function CommunityCardDialog() {
     const currentHand = usePokerStore((state) => state.currentHand);
@@ -57,7 +58,7 @@ export function CommunityCardDialog() {
     };
 
     return (
-        <Dialog open={needsCardInput} onOpenChange={() => { }}>
+        <Dialog open={needsCardInput} onOpenChange={(open) => !open && usePokerStore.temporal.getState().undo()}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Deal {streetName} Cards</DialogTitle>
@@ -72,17 +73,12 @@ export function CommunityCardDialog() {
                         </div>
                         <div className="flex justify-center gap-2 min-h-[100px] items-center">
                             {selectedCards.map((card, i) => (
-                                <div
-                                    key={i}
-                                    className="w-16 h-22 bg-white rounded border-2 border-primary shadow-lg flex items-center justify-center text-2xl font-bold text-black"
-                                >
-                                    {card}
-                                </div>
+                                <Card key={i} code={card} faceUp={true} size="medium" />
                             ))}
                             {Array.from({ length: cardsNeeded - selectedCards.length }).map((_, i) => (
                                 <div
                                     key={`empty-${i}`}
-                                    className="w-16 h-22 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
+                                    className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
                                 />
                             ))}
                         </div>

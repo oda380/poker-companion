@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Numpad } from "./Numpad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 export function Controls() {
     const currentHand = usePokerStore((state) => state.currentHand);
@@ -47,7 +48,20 @@ export function Controls() {
                 variant="outline"
                 size="lg"
                 className="h-16 text-xl font-bold bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white active:scale-95 transition-transform"
-                onClick={() => playerAction("check")}
+                onClick={() => {
+                    const activeId = currentHand.activePlayerId || "";
+                    const playerCommitted = currentHand.perPlayerCommitted[activeId] || 0;
+                    const amountToCall = currentBet - playerCommitted;
+
+                    if (amountToCall > 0) {
+                        toast.error("Action Required", {
+                            description: `You cannot Check. You must Call ${amountToCall}, Raise, or Fold.`,
+                            duration: 3000,
+                        });
+                        return;
+                    }
+                    playerAction("check");
+                }}
             >
                 Check
             </Button>

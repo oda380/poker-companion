@@ -262,7 +262,7 @@ export function processAction(table: TableState, actionType: Action["bettingType
             return {
                 ...table,
                 players: updatedPlayers.map(p =>
-                    p.id === winner.id ? { ...p, stack: p.stack + totalPot } : p
+                    p.id === winner.id ? { ...p, stack: p.stack + totalPot, wins: (p.wins || 0) + 1 } : p
                 ),
                 currentHand: undefined,
                 handHistory: [

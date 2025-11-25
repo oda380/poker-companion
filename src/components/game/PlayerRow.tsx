@@ -2,6 +2,7 @@ import { Player, PlayerHandState } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { Trophy } from "lucide-react";
 import { Card } from "./Card";
 import { ChipStack } from "./Chip";
 
@@ -64,7 +65,15 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                 </div>
 
                 <div>
-                    <div className="font-bold text-lg leading-none mb-1 text-foreground">{player.name}</div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="font-bold text-lg leading-none text-foreground">{player.name}</div>
+                        {player.wins > 0 && (
+                            <div className="flex items-center gap-0.5 text-yellow-500" title={`${player.wins} wins`}>
+                                <Trophy className="w-3 h-3 fill-yellow-500" />
+                                <span className="text-xs font-bold">{player.wins}</span>
+                            </div>
+                        )}
+                    </div>
                     <ChipStack amount={player.stack} />
                 </div>
             </div>

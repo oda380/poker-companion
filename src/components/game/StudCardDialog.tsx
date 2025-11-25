@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
 import { useState } from "react";
+import { Card } from "./Card";
 
 export function StudCardDialog() {
     const currentHand = usePokerStore((state) => state.currentHand);
@@ -96,7 +97,7 @@ export function StudCardDialog() {
     };
 
     return (
-        <Dialog open={needsStudCard} onOpenChange={() => { }}>
+        <Dialog open={needsStudCard} onOpenChange={(open) => !open && usePokerStore.temporal.getState().undo()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Deal {streetName} Card</DialogTitle>
@@ -115,15 +116,7 @@ export function StudCardDialog() {
                     {playerHand && playerHand.cards.length > 0 && (
                         <div className="flex justify-center gap-2 p-3 bg-muted/30 rounded">
                             {playerHand.cards.map((card, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-10 h-14 rounded border-2 shadow flex items-center justify-center text-sm font-bold ${card.faceUp
-                                        ? 'bg-white border-gray-300 text-black'
-                                        : 'bg-blue-600 border-blue-700 text-white'
-                                        }`}
-                                >
-                                    {card.faceUp ? card.code : '🂠'}
-                                </div>
+                                <Card key={i} code={card.code} faceUp={card.faceUp} size="small" />
                             ))}
                         </div>
                     )}
@@ -131,11 +124,9 @@ export function StudCardDialog() {
                     {/* Selected card preview */}
                     <div className="flex justify-center">
                         {selectedCard ? (
-                            <div className="w-16 h-22 bg-white rounded border-2 border-primary shadow-lg flex items-center justify-center text-2xl font-bold text-black">
-                                {selectedCard}
-                            </div>
+                            <Card code={selectedCard} faceUp={true} size="medium" />
                         ) : (
-                            <div className="w-16 h-22 bg-muted rounded border-2 border-dashed border-muted-foreground/30" />
+                            <div className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30" />
                         )}
                     </div>
 

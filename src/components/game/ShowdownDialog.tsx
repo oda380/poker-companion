@@ -5,6 +5,7 @@ import { CardKeyboard } from "./CardKeyboard";
 import { useState } from "react";
 import { evaluateWinners } from "@/lib/hand-evaluator";
 import { Trophy } from "lucide-react";
+import { Card } from "./Card";
 
 interface EvaluationResult {
     winners: Array<{ playerId: string; handDescription: string }>;
@@ -28,7 +29,8 @@ export function ShowdownDialog() {
         !p.isSittingOut && p.status !== "folded"
     );
 
-    const totalPot = Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
+    const totalPot = (currentHand.pots?.reduce((sum, pot) => sum + pot.amount, 0) || 0) +
+        Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
 
     // For Stud, extract face-up cards and check if hole cards need input
     const isStud = currentHand.gameVariant === "fiveCardStud";
@@ -139,7 +141,7 @@ export function ShowdownDialog() {
             ...state,
             players: state.players.map(p => {
                 const winner = evaluationResult.winners.find(w => w.playerId === p.id);
-                return winner ? { ...p, stack: p.stack + potPerWinner } : p;
+                return winner ? { ...p, stack: p.stack + potPerWinner, wins: (p.wins || 0) + 1 } : p;
             }),
             currentHand: undefined,
             handHistory: [
@@ -165,8 +167,21 @@ export function ShowdownDialog() {
         setEvaluationResult(null);
     };
 
+    const handleClose = (open: boolean) => {
+        if (open) return; // Only handle closing
+
+        if (currentInputPlayer) {
+            // If inputting a hand, go back to player list
+            setCurrentInputPlayer(null);
+            setSelectedCards([]);
+        } else {
+            // Otherwise, close dialog (undo)
+            usePokerStore.temporal.getState().undo();
+        }
+    };
+
     return (
-        <Dialog open={isShowdown} onOpenChange={() => { }}>
+        <Dialog open={isShowdown} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
@@ -183,12 +198,7 @@ export function ShowdownDialog() {
                     {currentHand.board.length > 0 && (
                         <div className="flex justify-center gap-2 p-4 bg-muted/30 rounded">
                             {currentHand.board.map((card, i) => (
-                                <div
-                                    key={i}
-                                    className="w-12 h-16 bg-white rounded border-2 border-gray-300 shadow flex items-center justify-center text-lg font-bold text-black"
-                                >
-                                    {card}
-                                </div>
+                                <Card key={i} code={card} faceUp={true} size="medium" />
                             ))}
                         </div>
                     )}
@@ -219,12 +229,7 @@ export function ShowdownDialog() {
                                         </div>
                                         <div className="flex gap-2">
                                             {handInfo?.cards.map((card, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-12 h-16 bg-white rounded border-2 border-gray-300 shadow flex items-center justify-center text-lg font-bold text-black"
-                                                >
-                                                    {card}
-                                                </div>
+                                                <Card key={i} code={card} faceUp={true} size="small" />
                                             ))}
                                         </div>
                                     </div>
@@ -248,19 +253,14 @@ export function ShowdownDialog() {
                                         <div className="font-bold text-lg">
                                             {players.find(p => p.id === currentInputPlayer)?.name}'s Hand
                                         </div>
-                                        <div className="flex justify-center gap-2 mt-2">
+                                        <div className="flex justify-center gap-2 mt-2 h-24 items-center">
                                             {selectedCards.map((card, i) => (
-                                                <div
-                                                    key={i}
-                                                    className="w-12 h-16 bg-white rounded border-2 border-primary shadow flex items-center justify-center text-lg font-bold text-black"
-                                                >
-                                                    {card}
-                                                </div>
+                                                <Card key={i} code={card} faceUp={true} size="medium" />
                                             ))}
                                             {Array.from({ length: 2 - selectedCards.length }).map((_, i) => (
                                                 <div
                                                     key={`empty-${i}`}
-                                                    className="w-12 h-16 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
+                                                    className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
                                                 />
                                             ))}
                                         </div>

@@ -9,6 +9,7 @@ export interface Player {
     stack: number;
     isSittingOut: boolean;
     status: PlayerStatus;
+    wins: number;
 }
 
 export interface TableConfig {
