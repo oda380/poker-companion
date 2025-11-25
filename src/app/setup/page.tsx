@@ -89,7 +89,7 @@ export default function SetupPage() {
             }
 
             router.push("/table");
-        }, 500);
+        }, 100);
     };
 
     return (
