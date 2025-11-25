@@ -12,10 +12,11 @@ import { ShowdownDialog } from "@/components/game/ShowdownDialog";
 import { DealerSelectionDialog } from "@/components/game/DealerSelectionDialog";
 import { CommunityCardDialog } from "@/components/game/CommunityCardDialog";
 import { StudCardDialog } from "@/components/game/StudCardDialog";
-import { Settings, History, RotateCcw, Home, Users, Menu } from "lucide-react";
+import { Settings, History, RotateCcw, Home, Users, Menu, BookOpen } from "lucide-react";
 import { InitialDealDialog } from "@/components/game/InitialDealDialog";
 import { ChipAnimation } from "@/components/game/ChipAnimation";
 import { SettingsDialog } from "@/components/game/SettingsDialog";
+import { RulesDialog } from "@/components/game/RulesDialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -74,6 +75,11 @@ export default function TablePage() {
                 </div>
                 <div className="flex gap-2">
                     <HandHistory />
+                    <RulesDialog trigger={
+                        <Button variant="ghost" size="icon" className="hover:bg-white/10">
+                            <BookOpen className="w-5 h-5" />
+                        </Button>
+                    } />
                     <SettingsDialog />
                 </div>
             </header>

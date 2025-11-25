@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { RulesDialog } from "@/components/game/RulesDialog";
 
 export default function Home() {
   const router = useRouter();
@@ -47,6 +48,8 @@ export default function Home() {
           >
             Start New Table
           </Button>
+
+          <RulesDialog />
 
           <Button
             variant="outline"
