@@ -89,13 +89,7 @@ export default function SetupPage() {
                 addPlayer(playerNames[i] || `Player ${i + 1}`, i + 1, startingStack);
             }
 
-            // For Stud with 2 players, force a full page reload to bypass iOS Safari caching issues
-            // This is a workaround for a persistent touch offset bug specific to this configuration
-            if (variant === "fiveCardStud" && playerCount === 2) {
-                window.location.href = "/table";
-            } else {
-                router.push("/table");
-            }
+            router.push("/table");
         }, 100);
     };
 
