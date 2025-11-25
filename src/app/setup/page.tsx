@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePokerStore } from "@/store/usePokerStore";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,18 @@ export default function SetupPage() {
     const [startingStack, setStartingStack] = useState(1000);
     const [playerCount, setPlayerCount] = useState(4);
     const [playerNames, setPlayerNames] = useState<string[]>(Array(9).fill("").map((_, i) => `Player ${i + 1}`));
+    const tableNameInputRef = useRef<HTMLInputElement>(null);
+
+    // Auto-focus table name input to force iOS viewport recalculation
+    useEffect(() => {
+        // Small delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+            tableNameInputRef.current?.focus();
+            // Immediately blur to not show keyboard, but viewport is recalculated
+            tableNameInputRef.current?.blur();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handlePlayerCountChange = (count: number) => {
         setPlayerCount(count);
@@ -93,6 +105,7 @@ export default function SetupPage() {
                         <div className="space-y-3">
                             <Label className="text-base">Table Name</Label>
                             <Input
+                                ref={tableNameInputRef}
                                 value={tableName}
                                 onChange={(e) => setTableName(e.target.value)}
                                 className="h-12 text-lg bg-background/50 border-white/10 focus:border-primary/50 transition-colors"
