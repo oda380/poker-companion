@@ -19,8 +19,12 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
     // Reset selection when dialog opens (isFirstHand becomes true)
     useEffect(() => {
         if (isFirstHand) {
-            console.log("DealerSelectionDialog: Resetting selectedSeat");
+            console.log("DealerSelectionDialog: Resetting selectedSeat and scroll position");
             setSelectedSeat(null);
+
+            // Force scroll to top to fix touch offset issues on mobile
+            // This ensures viewport calculations are correct
+            window.scrollTo(0, 0);
         }
     }, [isFirstHand]);
 
