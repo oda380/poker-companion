@@ -41,6 +41,14 @@ export default function TablePage() {
             return;
         }
 
+        // Reset scroll position of main content area
+        // This fixes touch offset issues in Stud where the scrollable main element
+        // can have cached scroll position causing touch layer desync on iOS
+        const mainElement = document.querySelector('main');
+        if (mainElement) {
+            mainElement.scrollTop = 0;
+        }
+
         // Cleanup on unmount
         return () => {
             // Close any open modals in the store to prevent them from trying to restore focus/locks
