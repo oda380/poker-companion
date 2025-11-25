@@ -78,7 +78,7 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
     };
 
     return (
-        <Dialog key={players.length > 0 ? players[0].id : 'no-players'} open={isFirstHand} onOpenChange={() => { }}>
+        <Dialog key={`dealer-${players.length}-${players[0]?.id || 'none'}`} open={isFirstHand} onOpenChange={() => { }}>
             <DialogContent className="sm:max-w-md">
                 {isReady && (
                     <>
