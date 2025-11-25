@@ -41,77 +41,89 @@ const initialState: TableState = {
     updatedAt: new Date().toISOString(),
 };
 
+import { persist } from "zustand/middleware";
+
 export const usePokerStore = create<PokerStore>()(
-    temporal(
-        (set, get) => ({
-            ...initialState,
+    persist(
+        temporal(
+            (set, get) => ({
+                ...initialState,
 
-            ui: {
-                isSettingsOpen: false,
-                isHandHistoryOpen: false,
-                activeModal: null,
-            },
+                ui: {
+                    isSettingsOpen: false,
+                    isHandHistoryOpen: false,
+                    activeModal: null,
+                },
 
-            setTableConfig: (name, variant, config) => set({ name, gameVariant: variant, config }),
+                setTableConfig: (name, variant, config) => set({ name, gameVariant: variant, config }),
 
-            addPlayer: (name, seat, stack) => set((state) => ({
-                players: [
-                    ...state.players,
-                    {
-                        id: crypto.randomUUID(),
-                        name,
-                        seat,
-                        stack,
-                        isSittingOut: false,
-                        status: "active",
-                    }
-                ]
-            })),
+                addPlayer: (name, seat, stack) => set((state) => ({
+                    players: [
+                        ...state.players,
+                        {
+                            id: crypto.randomUUID(),
+                            name,
+                            seat,
+                            stack,
+                            isSittingOut: false,
+                            status: "active",
+                        }
+                    ]
+                })),
 
-            removePlayer: (playerId) => set((state) => ({
-                players: state.players.filter((p) => p.id !== playerId)
-            })),
+                removePlayer: (playerId) => set((state) => ({
+                    players: state.players.filter((p) => p.id !== playerId)
+                })),
 
-            updatePlayerStatus: (playerId, status) => set((state) => ({
-                players: state.players.map((p) => p.id === playerId ? { ...p, status } : p)
-            })),
+                updatePlayerStatus: (playerId, status) => set((state) => ({
+                    players: state.players.map((p) => p.id === playerId ? { ...p, status } : p)
+                })),
 
-            startNewHand: (dealerSeat?: number) => {
-                set((state) => {
-                    try {
-                        const { hand, updatedPlayers } = initializeHand(state, dealerSeat);
-                        return { ...state, currentHand: hand, players: updatedPlayers };
-                    } catch (e) {
-                        console.error("Failed to start hand:", e);
-                        return state;
-                    }
-                });
-            },
+                startNewHand: (dealerSeat?: number) => {
+                    set((state) => {
+                        try {
+                            const { hand, updatedPlayers } = initializeHand(state, dealerSeat);
+                            return { ...state, currentHand: hand, players: updatedPlayers };
+                        } catch (e) {
+                            console.error("Failed to start hand:", e);
+                            return state;
+                        }
+                    });
+                },
 
-            dealCards: () => {
-                // TODO: Implement dealing logic for next streets (Stud)
-                // This might be part of processAction or a separate step?
-                // For now, keep it empty or delegate.
-            },
+                dealCards: () => {
+                    // TODO: Implement dealing logic for next streets (Stud)
+                    // This might be part of processAction or a separate step?
+                    // For now, keep it empty or delegate.
+                },
 
-            playerAction: (actionType, amount) => {
-                set((state) => {
-                    try {
-                        return processAction(state, actionType, amount);
-                    } catch (e) {
-                        console.error("Action failed:", e);
-                        return state;
-                    }
-                });
-            },
+                playerAction: (actionType, amount) => {
+                    set((state) => {
+                        try {
+                            return processAction(state, actionType, amount);
+                        } catch (e) {
+                            console.error("Action failed:", e);
+                            return state;
+                        }
+                    });
+                },
 
-            setUiState: (partialUi) => set((state) => ({
-                ui: { ...state.ui, ...partialUi }
-            })),
-        }),
+                setUiState: (partialUi) => set((state) => ({
+                    ui: { ...state.ui, ...partialUi }
+                })),
+            }),
+            {
+                limit: 50,
+                partialize: (state) => {
+                    const { ui, ...logicState } = state;
+                    return logicState;
+                },
+            }
+        ),
         {
-            limit: 50,
+            name: "poker-storage",
             partialize: (state) => {
+                // Exclude UI state from persistence
                 const { ui, ...logicState } = state;
                 return logicState;
             },

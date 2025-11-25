@@ -64,7 +64,7 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                 </div>
 
                 <div>
-                    <div className="font-bold text-lg leading-none mb-1 text-white">{player.name}</div>
+                    <div className="font-bold text-lg leading-none mb-1 text-foreground">{player.name}</div>
                     <ChipStack amount={player.stack} />
                 </div>
             </div>
