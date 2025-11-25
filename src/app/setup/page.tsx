@@ -42,6 +42,7 @@ export default function SetupPage() {
     const [playerCount, setPlayerCount] = useState(4);
     const [playerNames, setPlayerNames] = useState<string[]>(Array(9).fill("").map((_, i) => `Player ${i + 1}`));
     const tableNameInputRef = useRef<HTMLInputElement>(null);
+    const [hasInteractedWithInput, setHasInteractedWithInput] = useState(false);
 
     // Auto-focus table name input to force iOS viewport recalculation
     // This prevents touch offset issues by ensuring iOS recalculates viewport on setup
@@ -115,7 +116,9 @@ export default function SetupPage() {
                                 ref={tableNameInputRef}
                                 value={tableName}
                                 onChange={(e) => setTableName(e.target.value)}
+                                onFocus={() => setHasInteractedWithInput(true)}
                                 className="h-12 text-lg bg-background/50 border-white/10 focus:border-primary/50 transition-colors"
+                                placeholder="Enter table name..."
                             />
                         </div>
 
@@ -224,11 +227,17 @@ export default function SetupPage() {
 
                         <Button
                             size="lg"
-                            className="w-full h-14 text-lg font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.01]"
+                            className="w-full h-14 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50"
                             onClick={handleStart}
+                            disabled={!hasInteractedWithInput}
                         >
                             Create Table
                         </Button>
+                        {!hasInteractedWithInput && (
+                            <p className="text-xs text-center text-muted-foreground mt-2">
+                                Tap the table name above to continue
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </motion.div>
