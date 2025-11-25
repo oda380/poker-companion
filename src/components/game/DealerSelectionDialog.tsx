@@ -16,8 +16,6 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
     // Only show for first hand and before hand starts
     const isFirstHand = handHistory.length === 0 && !currentHand;
 
-    if (!isFirstHand) return null;
-
     const handleConfirm = () => {
         if (selectedSeat !== null) {
             try {
