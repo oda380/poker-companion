@@ -55,7 +55,7 @@ export function Controls() {
 
                     if (amountToCall > 0) {
                         toast.error("Action Required", {
-                            description: `You cannot Check. You must Call ${amountToCall}, Raise, or Fold.`,
+                            description: `You cannot Check. You must Call ${currentBet}, Raise, or Fold.`,
                             duration: 3000,
                         });
                         return;
