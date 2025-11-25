@@ -36,34 +36,50 @@ export function evaluateWinners(
     boardCards: string[],
     gameVariant: string
 ): WinnerResult[] {
-    // For Texas Hold'em, combine each player's 2 hole cards with 5 board cards
-    // pokersolver will find the best 5-card hand from the 7 cards
+    try {
+        // For Texas Hold'em, combine each player's 2 hole cards with 5 board cards
+        // pokersolver will find the best 5-card hand from the 7 cards
 
-    const playerHands = Object.entries(playerHoleCards).map(([playerId, holeCards]) => {
-        const allCards = [...holeCards, ...boardCards];
-        const hand = Hand.solve(allCards);
-        return {
-            playerId,
-            hand,
-            handDescription: hand.descr
-        };
-    });
+        const playerHands = Object.entries(playerHoleCards).map(([playerId, holeCards]) => {
+            const allCards = [...holeCards, ...boardCards];
 
-    // Use pokersolver's built-in winner determination
-    const hands = playerHands.map(p => p.hand);
-    const winners = Hand.winners(hands);
+            // Validate card count to prevent crashes in Hand.solve
+            if (allCards.length === 0) {
+                throw new Error(`Player ${playerId} has no cards`);
+            }
 
-    // Map back to player IDs
-    const winnerResults: WinnerResult[] = [];
-    for (const winningHand of winners) {
-        const playerHand = playerHands.find(p => p.hand === winningHand);
-        if (playerHand) {
-            winnerResults.push({
-                playerId: playerHand.playerId,
-                handDescription: playerHand.handDescription
-            });
+            const hand = Hand.solve(allCards);
+            return {
+                playerId,
+                hand,
+                handDescription: hand.descr
+            };
+        });
+
+        if (playerHands.length === 0) {
+            return [];
         }
-    }
 
-    return winnerResults;
+        // Use pokersolver's built-in winner determination
+        const hands = playerHands.map(p => p.hand);
+        const winners = Hand.winners(hands);
+
+        // Map back to player IDs
+        const winnerResults: WinnerResult[] = [];
+        for (const winningHand of winners) {
+            const playerHand = playerHands.find(p => p.hand === winningHand);
+            if (playerHand) {
+                winnerResults.push({
+                    playerId: playerHand.playerId,
+                    handDescription: playerHand.handDescription
+                });
+            }
+        }
+
+        return winnerResults;
+    } catch (e) {
+        console.error("Error in evaluateWinners:", e);
+        // Return empty array instead of crashing
+        return [];
+    }
 }

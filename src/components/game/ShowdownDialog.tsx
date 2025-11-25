@@ -84,39 +84,58 @@ export function ShowdownDialog() {
     const handleEvaluate = () => {
         if (!currentHand) return;
 
-        // For Stud, combine hole cards (from input) with face-up cards (from hand state)
-        let fullPlayerHands = { ...playerHands };
-        if (isStud) {
-            fullPlayerHands = {};
-            Object.entries(playerHands).forEach(([playerId, holeCards]) => {
-                // Get face-up cards from current hand
-                const playerHandState = currentHand.playerHands.find(ph => ph.playerId === playerId);
-                const faceUpCards = playerHandState?.cards.filter(c => c.faceUp && c.code).map(c => c.code) || [];
-                // Combine: hole card(s) + face-up cards
-                fullPlayerHands[playerId] = [...holeCards, ...faceUpCards];
+        try {
+            // For Stud, combine hole cards (from input) with face-up cards (from hand state)
+            let fullPlayerHands = { ...playerHands };
+            if (isStud) {
+                fullPlayerHands = {};
+                Object.entries(playerHands).forEach(([playerId, holeCards]) => {
+                    // Get face-up cards from current hand
+                    const playerHandState = currentHand.playerHands.find(ph => ph.playerId === playerId);
+                    const faceUpCards = playerHandState?.cards.filter(c => c.faceUp && c.code).map(c => c.code) || [];
+
+                    // Combine: hole card(s) + face-up cards
+                    const combined = [...holeCards, ...faceUpCards];
+
+                    // Validate: Stud hands should have cards (usually 5, but at least some)
+                    if (combined.length === 0) {
+                        console.warn(`Player ${playerId} has no cards to evaluate`);
+                    }
+
+                    fullPlayerHands[playerId] = combined;
+                });
+            }
+
+            // Evaluate winners using poker-evaluator
+            const winners = evaluateWinners(
+                fullPlayerHands,
+                currentHand.board,
+                currentHand.gameVariant
+            );
+
+            if (!winners || winners.length === 0) {
+                // If evaluation failed (returned empty), show error
+                alert("Error evaluating hands. Please check that all cards are entered correctly.");
+                return;
+            }
+
+            // Store all hands with descriptions for display
+            const allHands: Record<string, { cards: string[]; handDescription: string }> = {};
+            Object.entries(fullPlayerHands).forEach(([playerId, cards]) => {
+                const winner = winners.find(w => w.playerId === playerId);
+                allHands[playerId] = {
+                    cards,
+                    handDescription: winner?.handDescription || "Lost"
+                };
+                // Reveal hand on table
+                usePokerStore.getState().revealHand(playerId, cards);
             });
+
+            setEvaluationResult({ winners, allHands });
+        } catch (e) {
+            console.error("Handle evaluate error:", e);
+            alert("An unexpected error occurred during evaluation.");
         }
-
-        // Evaluate winners using poker-evaluator
-        const winners = evaluateWinners(
-            fullPlayerHands,
-            currentHand.board,
-            currentHand.gameVariant
-        );
-
-        // Store all hands with descriptions for display
-        const allHands: Record<string, { cards: string[]; handDescription: string }> = {};
-        Object.entries(fullPlayerHands).forEach(([playerId, cards]) => {
-            const winner = winners.find(w => w.playerId === playerId);
-            allHands[playerId] = {
-                cards,
-                handDescription: winner?.handDescription || "Lost"
-            };
-            // Reveal hand on table
-            usePokerStore.getState().revealHand(playerId, cards);
-        });
-
-        setEvaluationResult({ winners, allHands });
     };
 
     const handleConfirmResults = () => {
