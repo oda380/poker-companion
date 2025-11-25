@@ -131,7 +131,12 @@ export const usePokerStore = create<PokerStore>()(
                     id: crypto.randomUUID(),
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    // We might want to keep UI state? For now reset everything to be safe
+                    // Explicitly reset UI state to prevent lingering modals
+                    ui: {
+                        isSettingsOpen: false,
+                        isHandHistoryOpen: false,
+                        activeModal: null,
+                    }
                 }),
 
                 playerAction: (actionType, amount) => {
