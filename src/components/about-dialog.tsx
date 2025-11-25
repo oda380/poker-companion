@@ -22,7 +22,7 @@ export function AboutDialog() {
                     <div className="space-y-2">
                         <h3 className="font-semibold text-lg">What is Poker Companion?</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            A modern, local-first poker table companion app designed for home games and tournaments.
+                            A modern, local-first poker table companion app designed for home games.
                             Track players, manage blinds, and keep a detailed history of every hand—all without requiring
                             an internet connection or server.
                         </p>

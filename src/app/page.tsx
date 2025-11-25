@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { RulesDialog } from "@/components/game/RulesDialog";
 import { AboutDialog } from "@/components/about-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   const router = useRouter();
@@ -14,9 +15,10 @@ export default function Home() {
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none" />
 
-      {/* Info icon in top-right */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Info icon and Theme Toggle in top-right */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         <AboutDialog />
+        <ThemeToggle />
       </div>
 
       <motion.div
@@ -40,7 +42,7 @@ export default function Home() {
               Poker Companion
             </h1>
             <p className="text-lg text-muted-foreground max-w-sm mx-auto">
-              The professional dealer assistant for your home games.
+              The ultimate companion for your home games.
             </p>
           </div>
         </div>
