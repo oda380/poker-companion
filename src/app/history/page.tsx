@@ -143,17 +143,33 @@ function SessionCard({ session, isExpanded, onToggle }: { session: GameSession, 
                                             #{hand.handNumber}
                                         </div>
                                         <div>
-                                            <div className="font-medium flex items-center gap-2">
+                                            <div className="font-medium flex flex-wrap items-center gap-2">
                                                 <Trophy className="w-3 h-3 text-amber-500" />
                                                 {hand.summary.winners.map(w => {
-                                                    // Try to find player name from session snapshot, fallback to ID
                                                     const player = session.finalPlayers?.find(p => p.id === w.playerId);
-                                                    return player ? player.name : "Unknown Player";
+                                                    return player ? player.name : "Unknown";
                                                 }).join(", ")}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground mt-1">
                                                 {hand.summary.winners[0]?.handDescription}
                                             </div>
+
+                                            {/* Show all hands if available */}
+                                            {hand.summary.playerHands && (
+                                                <div className="mt-2 space-y-1">
+                                                    {hand.summary.playerHands.map((ph) => {
+                                                        const player = session.finalPlayers?.find(p => p.id === ph.playerId);
+                                                        const isWinner = hand.summary.winners.some(w => w.playerId === ph.playerId);
+                                                        return (
+                                                            <div key={ph.playerId} className={`text-xs flex items-center gap-2 ${isWinner ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
+                                                                <span className="w-16 truncate">{player?.name || "Unknown"}:</span>
+                                                                <span>{ph.handDescription}</span>
+                                                                <span className="opacity-50">[{ph.cards.join(" ")}]</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="font-mono font-bold text-emerald-400">

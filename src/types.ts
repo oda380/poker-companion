@@ -85,6 +85,7 @@ export interface HandSummary {
     gameVariant: GameVariant;
     dealerSeat: number;
     winners: { playerId: string; potShare: number; handDescription: string }[];
+    playerHands?: { playerId: string; cards: string[]; handDescription: string }[];
     totalPot: number;
     createdAt: string;
 }

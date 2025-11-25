@@ -88,7 +88,15 @@ export const usePokerStore = create<PokerStore>()(
                         try {
                             const { hand, updatedPlayers } = initializeHand(state, dealerSeat);
                             success = true;
-                            return { ...state, currentHand: hand, players: updatedPlayers };
+
+                            // Update session in DB with current players and config
+                            // This ensures the session record reflects the actual game setup
+                            const newState = { ...state, currentHand: hand, players: updatedPlayers };
+                            import('../lib/db').then(({ saveSession }) => {
+                                saveSession(newState);
+                            });
+
+                            return newState;
                         } catch (e) {
                             console.error("Failed to start hand:", e);
                             return state;

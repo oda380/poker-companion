@@ -158,6 +158,11 @@ export function ShowdownDialog() {
                 potShare: potPerWinner,
                 handDescription: w.handDescription
             })),
+            playerHands: Object.entries(evaluationResult.allHands).map(([playerId, info]) => ({
+                playerId,
+                cards: info.cards,
+                handDescription: info.handDescription
+            })),
             totalPot,
             createdAt: new Date().toISOString()
         };
