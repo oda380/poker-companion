@@ -50,9 +50,12 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
                     // 3. Force resize event as backup
                     window.dispatchEvent(new Event('resize'));
 
-                    setIsReady(true);
-                }, 50);
-            }, 100);
+                    // Wait a bit more before showing content
+                    setTimeout(() => {
+                        setIsReady(true);
+                    }, 100);
+                }, 100);
+            }, 150);
         } else {
             setIsReady(false);
         }
