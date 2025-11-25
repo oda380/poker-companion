@@ -35,9 +35,6 @@ export default function TablePage() {
     const undo = usePokerStore.temporal.getState().undo;
 
     useEffect(() => {
-        // Force scroll to top on mount to prevent touch offset issues
-        window.scrollTo(0, 0);
-
         if (players.length === 0) {
             router.push("/setup");
         }

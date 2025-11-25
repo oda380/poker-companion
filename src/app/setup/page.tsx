@@ -18,9 +18,6 @@ export default function SetupPage() {
 
     // Force cleanup of any lingering locks when entering setup
     useEffect(() => {
-        // Force scroll to top to prevent touch offset issues
-        window.scrollTo(0, 0);
-
         document.body.style.pointerEvents = '';
         document.body.style.overflow = '';
         document.body.removeAttribute('data-scroll-locked');
