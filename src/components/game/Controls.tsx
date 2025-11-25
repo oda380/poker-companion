@@ -45,9 +45,9 @@ export function Controls() {
             </Button>
 
             <Button
-                variant="outline"
+                variant="secondary"
                 size="lg"
-                className="h-16 text-xl font-bold bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white active:scale-95 transition-transform"
+                className="h-16 text-xl font-bold bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 shadow-lg shadow-blue-500/30 active:scale-95 transition-transform"
                 onClick={() => {
                     const activeId = currentHand.activePlayerId || "";
                     const playerCommitted = currentHand.perPlayerCommitted[activeId] || 0;

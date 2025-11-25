@@ -44,10 +44,10 @@ export function CardKeyboard({ onCardSelect, usedCards = [] }: CardKeyboardProps
     };
 
     const suitColors: Record<string, string> = {
-        h: "text-red-600",
-        d: "text-red-600",
-        c: "text-black",
-        s: "text-black",
+        h: "text-red-600 dark:text-red-400",
+        d: "text-red-600 dark:text-red-400",
+        c: "text-black dark:text-white",
+        s: "text-black dark:text-white",
     };
 
     return (
