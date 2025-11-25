@@ -75,11 +75,12 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
     let currentBet = 0;
 
     // Create updated players array with deductions and reset statuses
-    let updatedPlayers = players.map(p => ({
+    // Create updated players array with deductions and reset statuses
+    let updatedPlayers: Player[] = players.map(p => ({
         ...p,
         // Reset status to active ONLY if they have chips and weren't sitting out
         // If they have 0 chips, they remain/become sitting out (or we could add a 'busted' status later)
-        status: (p.stack > 0 && !p.isSittingOut) ? "active" as const : "sittingOut" as const
+        status: (p.stack > 0 && !p.isSittingOut) ? "active" : "sittingOut"
     }));
 
     // Apply Ante
@@ -333,7 +334,7 @@ export function processAction(table: TableState, actionType: Action["bettingType
         (nextPlayer.status === "folded" ||
             nextPlayer.status === "allIn" ||
             nextPlayer.status === "sittingOut" ||
-            (nextPlayer.stack === 0 && nextPlayer.status !== "allIn")) &&
+            nextPlayer.stack === 0) &&
         attempts < allPlayers.length
     ) {
         nextIndex = (nextIndex + 1) % allPlayers.length;
