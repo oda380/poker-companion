@@ -12,6 +12,10 @@ export function InitialDealDialog() {
     // Show dialog when activePlayerId is "WAITING_FOR_DEAL_CONFIRM"
     const needsConfirm = currentHand.activePlayerId === "WAITING_FOR_DEAL_CONFIRM";
 
+    if (needsConfirm) {
+        console.log("InitialDealDialog: Rendering because activePlayerId is WAITING_FOR_DEAL_CONFIRM");
+    }
+
     if (!needsConfirm) return null;
 
     const activePlayers = players.filter(p => !p.isSittingOut && p.status !== "folded");

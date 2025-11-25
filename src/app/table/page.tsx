@@ -175,6 +175,41 @@ export default function TablePage() {
                         </Button>
                     </div>
                 )}
+
+                {/* Fallback for WAITING_FOR_DEAL_CONFIRM if Dialog fails to show */}
+                {currentHand && currentHand.activePlayerId === "WAITING_FOR_DEAL_CONFIRM" && (
+                    <div className="p-4 flex justify-center">
+                        <Button size="lg" className="w-full max-w-xs h-14 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800" onClick={() => {
+                            // Manually trigger the transition that InitialDealDialog would do
+                            const activePlayers = players.filter(p => !p.isSittingOut && p.status !== "folded");
+                            const dealerIndex = activePlayers.findIndex(p => p.seat === currentHand.dealerSeat);
+                            let firstToAct: string;
+
+                            if (currentHand.gameVariant === "texasHoldem") {
+                                if (activePlayers.length === 2) {
+                                    firstToAct = activePlayers[dealerIndex].id;
+                                } else {
+                                    const utg = (dealerIndex + 3) % activePlayers.length;
+                                    firstToAct = activePlayers[utg].id;
+                                }
+                            } else {
+                                // Stud: left of dealer
+                                const firstIndex = (dealerIndex + 1) % activePlayers.length;
+                                firstToAct = activePlayers[firstIndex].id;
+                            }
+
+                            usePokerStore.setState(state => ({
+                                ...state,
+                                currentHand: state.currentHand ? {
+                                    ...state.currentHand,
+                                    activePlayerId: firstToAct
+                                } : undefined
+                            }));
+                        }}>
+                            Start Betting Round (Manual)
+                        </Button>
+                    </div>
+                )}
             </main>
 
             {/* Controls */}
