@@ -169,15 +169,19 @@ export default function TablePage() {
 
                         <div className="relative">
                             <div className="text-xs text-amber-500/80 uppercase tracking-[0.2em] font-bold mb-3">Total Pot</div>
-                            <div className="flex items-start justify-center text-6xl font-black bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 bg-clip-text text-transparent drop-shadow-2xl filter">
-                                <span className="text-4xl opacity-60 mr-1 mt-2">$</span>
-                                <span>
+                            {/* We use a grid to perfectly center the number, letting the $ hang to the left */}
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-start text-6xl font-black bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 bg-clip-text text-transparent drop-shadow-2xl filter">
+                                <div className="text-right">
+                                    <span className="text-4xl opacity-60 mr-1 mt-2 inline-block">$</span>
+                                </div>
+                                <div>
                                     {currentHand
                                         ? (currentHand.pots.reduce((sum, pot) => sum + pot.amount, 0) +
                                             Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0))
                                         : 0
                                     }
-                                </span>
+                                </div>
+                                <div></div>
                             </div>
                         </div>
                     </div>

@@ -4,10 +4,11 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, GameSession, ArchivedHand } from "@/lib/db";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronDown, ChevronUp, Trophy, Calendar, Users } from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronUp, Trophy, Calendar, Users, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { format } from "date-fns";
+import { clearDatabase } from "@/lib/db";
 
 export default function HistoryPage() {
     const router = useRouter();
@@ -22,15 +23,29 @@ export default function HistoryPage() {
         }
     };
 
+    const handleClearHistory = async () => {
+        if (confirm("Are you sure you want to delete all game history? This cannot be undone.")) {
+            await clearDatabase();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-background p-4 md:p-8">
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                        <ChevronLeft className="w-6 h-6" />
-                    </Button>
-                    <h1 className="text-3xl font-bold">Game History</h1>
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                            <ChevronLeft className="w-6 h-6" />
+                        </Button>
+                        <h1 className="text-3xl font-bold">Game History</h1>
+                    </div>
+                    {sessions && sessions.length > 0 && (
+                        <Button variant="destructive" size="sm" onClick={handleClearHistory}>
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Clear History
+                        </Button>
+                    )}
                 </div>
 
                 {/* Session List */}

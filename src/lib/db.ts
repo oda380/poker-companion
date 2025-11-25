@@ -37,6 +37,13 @@ export const db = new PokerDatabase();
 
 // Helper Functions
 
+export async function clearDatabase() {
+    await db.transaction('rw', db.sessions, db.hands, async () => {
+        await db.sessions.clear();
+        await db.hands.clear();
+    });
+}
+
 export async function saveSession(state: TableState) {
     try {
         await db.sessions.put({
