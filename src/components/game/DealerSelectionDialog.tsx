@@ -28,12 +28,14 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
             // Reading offsetHeight triggers a reflow
             setTimeout(() => {
                 const _ = document.body.offsetHeight;
+                // Force viewport height recalculation
+                window.dispatchEvent(new Event('resize'));
                 setIsReady(true);
-            }, 50);
+            }, 100);
         } else {
             setIsReady(false);
         }
-    }, [isFirstHand]);
+    }, [isFirstHand, players.length]); // Add players.length as dependency
 
     const handleConfirm = () => {
         if (selectedSeat !== null) {
