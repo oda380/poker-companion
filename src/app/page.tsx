@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { RulesDialog } from "@/components/game/RulesDialog";
+import { AboutDialog } from "@/components/about-dialog";
 
 export default function Home() {
   const router = useRouter();
@@ -13,6 +13,11 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none" />
+
+      {/* Info icon in top-right */}
+      <div className="absolute top-4 right-4 z-10">
+        <AboutDialog />
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}

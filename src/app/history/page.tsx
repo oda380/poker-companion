@@ -173,7 +173,7 @@ function SessionCard({ session, isExpanded, onToggle }: { session: GameSession, 
                                         </div>
                                     </div>
                                     <div className="font-mono font-bold text-emerald-400">
-                                        ${hand.summary.totalPot}
+                                        {hand.summary.totalPot}
                                     </div>
                                 </div>
                             ))}

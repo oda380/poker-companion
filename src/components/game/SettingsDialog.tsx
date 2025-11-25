@@ -4,12 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePokerStore } from "@/store/usePokerStore";
-import { useTheme } from "next-themes";
-import { Settings, Moon, Sun, Laptop, Trash2, Plus } from "lucide-react";
+import { Settings, Trash2, Plus } from "lucide-react";
 import { useState } from "react";
 
 export function SettingsDialog() {
-    const { theme, setTheme } = useTheme();
     const players = usePokerStore((state) => state.players);
     const addPlayer = usePokerStore((state) => state.addPlayer);
     const removePlayer = usePokerStore((state) => state.removePlayer);
@@ -52,44 +50,12 @@ export function SettingsDialog() {
                     <DialogTitle>Table Settings</DialogTitle>
                 </DialogHeader>
 
-                <Tabs defaultValue="general" className="w-full">
+                <Tabs defaultValue="players" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="general">General</TabsTrigger>
                         <TabsTrigger value="players">Players</TabsTrigger>
                         <TabsTrigger value="game">Game</TabsTrigger>
+                        <TabsTrigger value="about">About</TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="general" className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Appearance</Label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <Button
-                                    variant={theme === "light" ? "default" : "outline"}
-                                    onClick={() => setTheme("light")}
-                                    className="flex flex-col h-20 gap-2"
-                                >
-                                    <Sun className="w-6 h-6" />
-                                    Light
-                                </Button>
-                                <Button
-                                    variant={theme === "dark" ? "default" : "outline"}
-                                    onClick={() => setTheme("dark")}
-                                    className="flex flex-col h-20 gap-2"
-                                >
-                                    <Moon className="w-6 h-6" />
-                                    Dark
-                                </Button>
-                                <Button
-                                    variant={theme === "system" ? "default" : "outline"}
-                                    onClick={() => setTheme("system")}
-                                    className="flex flex-col h-20 gap-2"
-                                >
-                                    <Laptop className="w-6 h-6" />
-                                    System
-                                </Button>
-                            </div>
-                        </div>
-                    </TabsContent>
 
                     <TabsContent value="players" className="space-y-4 py-4">
                         <div className="space-y-4">
@@ -126,7 +92,7 @@ export function SettingsDialog() {
                                                 </div>
                                                 <div>
                                                     <div className="font-medium">{player.name}</div>
-                                                    <div className="text-xs text-muted-foreground">${player.stack}</div>
+                                                    <div className="text-xs text-muted-foreground">{player.stack}</div>
                                                 </div>
                                             </div>
                                             <Button
@@ -173,6 +139,26 @@ export function SettingsDialog() {
                                     value={config.ante || 0}
                                     onChange={(e) => handleConfigChange("ante", Number(e.target.value))}
                                 />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="about" className="space-y-4 py-4">
+                        <div className="space-y-4 text-sm text-muted-foreground">
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-foreground">Developer Info</h4>
+                                <p>Created by [Dev Name Placeholder]</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-foreground">Contact</h4>
+                                <p>support@example.com</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-foreground">Copyright</h4>
+                                <p>© {new Date().getFullYear()} Poker Companion. All rights reserved.</p>
+                            </div>
+                            <div className="pt-2">
+                                <p className="text-xs">Version 1.0.0</p>
                             </div>
                         </div>
                     </TabsContent>

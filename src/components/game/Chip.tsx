@@ -63,7 +63,7 @@ export function ChipStack({ amount, className }: { amount: number, className?: s
                     </div>
                 ))}
             </div>
-            <span className="ml-2 font-bold text-emerald-400 text-lg">${amount}</span>
+            <span className="ml-2 font-bold text-emerald-400 text-lg">{amount}</span>
         </div>
     );
 }

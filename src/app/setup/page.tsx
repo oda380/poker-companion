@@ -11,11 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GameVariant } from "@/types";
 import { motion } from "framer-motion";
 
+import { NavBar } from "@/components/nav-bar";
+
 export default function SetupPage() {
     const router = useRouter();
     const setTableConfig = usePokerStore((state) => state.setTableConfig);
     const addPlayer = usePokerStore((state) => state.addPlayer);
-
     // Force cleanup of any lingering locks when entering setup
     useEffect(() => {
         document.body.style.pointerEvents = '';
@@ -81,7 +82,8 @@ export default function SetupPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden pt-20">
+            <NavBar />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-background to-background pointer-events-none" />
 
             <motion.div
@@ -123,53 +125,41 @@ export default function SetupPage() {
                                 <>
                                     <div className="space-y-3">
                                         <Label>Small Blind</Label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                            <Input
-                                                type="number"
-                                                value={smallBlind}
-                                                onChange={(e) => setSmallBlind(Number(e.target.value))}
-                                                className="pl-7 bg-background/50 border-white/10"
-                                            />
-                                        </div>
+                                        <Input
+                                            type="number"
+                                            value={smallBlind}
+                                            onChange={(e) => setSmallBlind(Number(e.target.value))}
+                                            className="bg-background/50 border-white/10"
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <Label>Big Blind</Label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                            <Input
-                                                type="number"
-                                                value={bigBlind}
-                                                onChange={(e) => setBigBlind(Number(e.target.value))}
-                                                className="pl-7 bg-background/50 border-white/10"
-                                            />
-                                        </div>
+                                        <Input
+                                            type="number"
+                                            value={bigBlind}
+                                            onChange={(e) => setBigBlind(Number(e.target.value))}
+                                            className="bg-background/50 border-white/10"
+                                        />
                                     </div>
                                 </>
                             )}
                             <div className="space-y-3">
                                 <Label>Ante (Optional)</Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                    <Input
-                                        type="number"
-                                        value={ante}
-                                        onChange={(e) => setAnte(Number(e.target.value))}
-                                        className="pl-7 bg-background/50 border-white/10"
-                                    />
-                                </div>
+                                <Input
+                                    type="number"
+                                    value={ante}
+                                    onChange={(e) => setAnte(Number(e.target.value))}
+                                    className="bg-background/50 border-white/10"
+                                />
                             </div>
                             <div className="space-y-3">
                                 <Label>Starting Stack</Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                                    <Input
-                                        type="number"
-                                        value={startingStack}
-                                        onChange={(e) => setStartingStack(Number(e.target.value))}
-                                        className="pl-7 bg-background/50 border-white/10"
-                                    />
-                                </div>
+                                <Input
+                                    type="number"
+                                    value={startingStack}
+                                    onChange={(e) => setStartingStack(Number(e.target.value))}
+                                    className="bg-background/50 border-white/10"
+                                />
                             </div>
                         </div>
 
@@ -218,16 +208,6 @@ export default function SetupPage() {
                         >
                             Create Table
                         </Button>
-
-                        <div className="pt-4 flex justify-center">
-                            <Button
-                                variant="link"
-                                className="text-muted-foreground hover:text-primary"
-                                onClick={() => router.push("/history")}
-                            >
-                                View Game History
-                            </Button>
-                        </div>
                     </CardContent>
                 </Card>
             </motion.div>

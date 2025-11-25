@@ -25,17 +25,23 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { NavBar } from "@/components/nav-bar";
+
 export default function TablePage() {
     const router = useRouter();
-    const tableId = usePokerStore((state) => state.id);
+    const tableId = usePokerStore((state) => state.id); // Keep this as it's used in the main div key
     const tableName = usePokerStore((state) => state.name);
     const players = usePokerStore((state) => state.players);
     const currentHand = usePokerStore((state) => state.currentHand);
-    const handHistory = usePokerStore((state) => state.handHistory);
+    const handHistory = usePokerStore((state) => state.handHistory); // Keep this as it's used for "Deal Hand" button
     const startNewHand = usePokerStore((state) => state.startNewHand);
-    const undo = usePokerStore.temporal.getState().undo;
+    const undo = usePokerStore.temporal.getState().undo; // Keep this as it's used in DropdownMenu
+    const resetGame = usePokerStore((state) => state.resetGame); // Added from snippet
+    const playerAction = usePokerStore((state) => state.playerAction); // Added from snippet
+    const gameVariant = usePokerStore((state) => state.gameVariant); // Added from snippet
 
     const [isHydrated, setIsHydrated] = useState(false);
+    const [showMenu, setShowMenu] = useState(false); // Added from snippet
 
     useEffect(() => {
         // Check if store is already hydrated
@@ -114,66 +120,21 @@ export default function TablePage() {
 
     return (
         <div key={tableId} className="h-[100dvh] overflow-hidden bg-background flex flex-col">
-            {/* Header */}
-            {/* Header */}
-            <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-background/60 backdrop-blur-xl sticky top-0 z-50 shadow-sm shrink-0">
-                <div className="flex items-center gap-3">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:bg-white/10">
-                                <Menu className="w-5 h-5" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-56 bg-card/95 backdrop-blur border-white/10">
-                            <DropdownMenuItem onClick={() => router.push("/")} className="focus:bg-primary/20">
-                                <Home className="w-4 h-4 mr-2" />
-                                Home
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push("/setup")} className="focus:bg-primary/20">
-                                <Users className="w-4 h-4 mr-2" />
-                                Table Setup
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push("/history")} className="focus:bg-primary/20">
-                                <History className="w-4 h-4 mr-2" />
-                                Game History
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem onClick={() => undo()} className="focus:bg-primary/20">
-                                <RotateCcw className="w-4 h-4 mr-2" />
-                                Undo Last Action
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <div className="font-bold text-lg tracking-tight text-foreground">
-                        {tableName}
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <HandHistory />
-                    <RulesDialog trigger={
-                        <Button variant="ghost" size="icon" className="hover:bg-white/10">
-                            <BookOpen className="w-5 h-5" />
-                        </Button>
-                    } />
-                    <SettingsDialog />
-                </div>
-            </header>
+            <NavBar />
 
             {/* Game Area */}
-            <main className="flex-1 overflow-y-auto pb-32 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
+            <main className="flex-1 overflow-y-auto pb-32 pt-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
                 {/* Pot Display */}
                 <div className="p-10 text-center sticky top-0 z-0">
                     <div id="pot-display" className="relative inline-block group">
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-radial from-amber-500/20 to-transparent blur-3xl group-hover:from-amber-500/30 transition-all duration-500" />
+                        {/* Enhanced glow effect - stronger and more visible */}
+                        <div className="absolute inset-0 bg-gradient-radial from-amber-500/40 dark:from-amber-500/30 to-transparent blur-3xl group-hover:from-amber-500/60 dark:group-hover:from-amber-500/40 transition-all duration-500" />
 
-                        <div className="relative">
-                            <div className="text-xs text-amber-500/80 uppercase tracking-[0.2em] font-bold mb-3">Total Pot</div>
-                            {/* We use a grid to perfectly center the number, letting the $ hang to the left */}
-                            <div className="grid grid-cols-[1fr_auto_1fr] items-start text-6xl font-black bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 bg-clip-text text-transparent drop-shadow-2xl filter">
-                                <div className="text-right">
-                                    <span className="text-4xl opacity-60 mr-1 mt-2 inline-block">$</span>
-                                </div>
+                        {/* Card background with border */}
+                        <div className="relative bg-gradient-to-br from-amber-50/90 via-white/80 to-amber-50/90 dark:from-slate-900/80 dark:via-slate-800/70 dark:to-slate-900/80 backdrop-blur-md rounded-2xl border-2 border-amber-400/30 dark:border-amber-500/20 shadow-2xl shadow-amber-500/20 dark:shadow-amber-500/10 px-12 py-8">
+                            <div className="text-xs text-amber-600 dark:text-amber-500/80 uppercase tracking-[0.2em] font-bold mb-3">Total Pot</div>
+                            {/* We use a grid to perfectly center the number */}
+                            <div className="grid grid-cols-[auto] items-start justify-center text-6xl font-black bg-gradient-to-b from-amber-500 via-amber-600 to-amber-700 dark:from-amber-300 dark:via-amber-500 dark:to-amber-700 bg-clip-text text-transparent drop-shadow-2xl filter">
                                 <div>
                                     {currentHand
                                         ? (currentHand.pots.reduce((sum, pot) => sum + pot.amount, 0) +
@@ -181,7 +142,6 @@ export default function TablePage() {
                                         : 0
                                     }
                                 </div>
-                                <div></div>
                             </div>
                         </div>
                     </div>
@@ -191,7 +151,7 @@ export default function TablePage() {
                             {currentHand.gameVariant === "texasHoldem" && (
                                 <>
                                     <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                                        Bet: ${currentHand.currentBet}
+                                        Bet: {currentHand.currentBet}
                                     </div>
                                     <div className="w-1 h-1 rounded-full bg-slate-600" />
                                 </>
