@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 interface DealerSelectionDialogProps {
-    onSelectDealer: (seat: number) => void;
+    onSelectDealer: (seat: number) => boolean;
 }
 
 export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogProps) {
@@ -20,7 +20,17 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
 
     const handleConfirm = () => {
         if (selectedSeat !== null) {
-            onSelectDealer(selectedSeat);
+            try {
+                console.log("Attempting to start hand with dealer seat:", selectedSeat);
+                const success = onSelectDealer(selectedSeat);
+                if (!success) {
+                    console.error("Failed to start hand (returned false)");
+                    alert("Failed to start the hand. Please try again or check console for errors.");
+                }
+            } catch (e) {
+                console.error("Error in handleConfirm:", e);
+                alert("An unexpected error occurred.");
+            }
         }
     };
 
@@ -41,7 +51,10 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
                                 key={player.id}
                                 variant={selectedSeat === player.seat ? "default" : "outline"}
                                 className="w-full h-14 text-lg justify-start"
-                                onClick={() => setSelectedSeat(player.seat)}
+                                onClick={() => {
+                                    console.log("Selected seat:", player.seat);
+                                    setSelectedSeat(player.seat);
+                                }}
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <span>{player.name}</span>

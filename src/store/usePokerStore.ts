@@ -11,7 +11,7 @@ interface PokerStore extends TableState {
     updatePlayerStatus: (playerId: string, status: Player["status"]) => void;
 
     // Game Flow Actions
-    startNewHand: (dealerSeat?: number) => void;
+    startNewHand: (dealerSeat?: number) => boolean;
     dealCards: () => void; // For Stud or Hold'em streets
     revealHand: (playerId: string, cards: string[]) => void;
     resetGame: () => void;
@@ -83,15 +83,18 @@ export const usePokerStore = create<PokerStore>()(
                 })),
 
                 startNewHand: (dealerSeat?: number) => {
+                    let success = false;
                     set((state) => {
                         try {
                             const { hand, updatedPlayers } = initializeHand(state, dealerSeat);
+                            success = true;
                             return { ...state, currentHand: hand, players: updatedPlayers };
                         } catch (e) {
                             console.error("Failed to start hand:", e);
                             return state;
                         }
                     });
+                    return success;
                 },
 
                 dealCards: () => {
