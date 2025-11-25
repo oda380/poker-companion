@@ -44,6 +44,13 @@ export async function clearDatabase() {
     });
 }
 
+export async function deleteSession(sessionId: string) {
+    await db.transaction('rw', db.sessions, db.hands, async () => {
+        await db.sessions.delete(sessionId);
+        await db.hands.where('sessionId').equals(sessionId).delete();
+    });
+}
+
 export async function saveSession(state: TableState) {
     try {
         await db.sessions.put({

@@ -78,6 +78,15 @@ function SessionCard({ session, isExpanded, onToggle }: { session: GameSession, 
         [isExpanded, session.id]
     );
 
+    const handleDelete = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm(`Are you sure you want to delete the session "${session.name}"?`)) {
+            import("@/lib/db").then(({ deleteSession }) => {
+                deleteSession(session.id);
+            });
+        }
+    };
+
     return (
         <Card className="overflow-hidden border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
             <div
@@ -104,9 +113,19 @@ function SessionCard({ session, isExpanded, onToggle }: { session: GameSession, 
                         )}
                     </div>
                 </div>
-                <Button variant="ghost" size="icon">
-                    {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={handleDelete}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                        {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                    </Button>
+                </div>
             </div>
 
             {isExpanded && (
