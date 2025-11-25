@@ -71,7 +71,7 @@ export function ChipAnimation() {
     }, [currentHand]);
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
             <AnimatePresence>
                 {flyingChips.map((chip) => (
                     <motion.div
