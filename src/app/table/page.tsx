@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePokerStore } from "@/store/usePokerStore";
 import { Button } from "@/components/ui/button";
@@ -35,11 +35,29 @@ export default function TablePage() {
     const startNewHand = usePokerStore((state) => state.startNewHand);
     const undo = usePokerStore.temporal.getState().undo;
 
+    const [isHydrated, setIsHydrated] = useState(false);
+
     useEffect(() => {
-        if (players.length === 0) {
+        // Check if store is already hydrated
+        if (usePokerStore.persist.hasHydrated()) {
+            setIsHydrated(true);
+        } else {
+            // If not, wait for hydration
+            const unsubscribe = usePokerStore.persist.onFinishHydration(() => {
+                setIsHydrated(true);
+            });
+            return () => unsubscribe();
+        }
+    }, []);
+
+    useEffect(() => {
+        // Only redirect if hydrated and no players
+        if (isHydrated && players.length === 0) {
             router.push("/setup");
             return;
         }
+
+        if (!isHydrated) return; // Don't do anything else until hydrated
 
         // Detect if running in Chrome on iOS
         const isChrome = /CriOS/.test(navigator.userAgent);
@@ -83,6 +101,14 @@ export default function TablePage() {
             document.body.removeAttribute('data-scroll-locked');
         };
     }, [players, router]);
+
+    if (!isHydrated) {
+        return (
+            <div className="h-[100dvh] flex items-center justify-center bg-background">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     if (players.length === 0) return null;
 
