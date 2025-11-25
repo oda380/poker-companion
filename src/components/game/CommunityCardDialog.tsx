@@ -35,21 +35,61 @@ export function CommunityCardDialog() {
             usePokerStore.setState((state) => {
                 if (!state.currentHand) return state;
 
-                // Find active players
+                // Find active players (not folded, not all-in)
                 const activePlayers = state.players.filter(p =>
                     !p.isSittingOut && p.status === "active"
                 );
 
-                // First to act is left of dealer
-                const dealerIndex = activePlayers.findIndex(p => p.seat === state.currentHand!.dealerSeat);
-                const firstToAct = activePlayers[(dealerIndex + 1) % activePlayers.length];
+                // Determine next step: Betting or Next Street (Runout)
+                let nextActivePlayerId = "";
+                let nextStreet = state.currentHand.currentStreet;
+                let nextPots = state.currentHand.pots;
+
+                // Helper to get next street name
+                const getNextStreetName = (s: string) => {
+                    if (s === "preflop") return "flop";
+                    if (s === "flop") return "turn";
+                    if (s === "turn") return "river";
+                    return "showdown";
+                };
+
+                if (activePlayers.length < 2) {
+                    // All-in scenario (or only 1 active): Skip betting, go to next street
+                    // We need to advance the street state immediately
+                    // Note: This is a simplified runout. Ideally we'd loop, but for now we just
+                    // set the state to "WAITING_FOR_CARDS" for the *next* street.
+
+                    const upcomingStreet = getNextStreetName(state.currentHand.currentStreet);
+
+                    if (upcomingStreet === "showdown") {
+                        nextActivePlayerId = ""; // Showdown
+                        nextStreet = "showdown";
+                    } else {
+                        nextActivePlayerId = "WAITING_FOR_CARDS"; // Deal next street immediately
+                        nextStreet = upcomingStreet as any;
+                    }
+                } else {
+                    // Normal betting round
+                    // First to act is left of dealer
+                    const dealerIndex = activePlayers.findIndex(p => p.seat === state.currentHand!.dealerSeat);
+                    // If dealer not found (e.g. folded), start from seat 0? 
+                    // Better: sort by seat and find next active after dealerSeat
+                    const sortedActive = [...activePlayers].sort((a, b) => a.seat - b.seat);
+                    const nextActive = sortedActive.find(p => p.seat > state.currentHand!.dealerSeat) || sortedActive[0];
+
+                    nextActivePlayerId = nextActive?.id || "";
+                }
 
                 return {
                     ...state,
                     currentHand: {
                         ...state.currentHand,
                         board: [...state.currentHand.board, ...selectedCards],
-                        activePlayerId: firstToAct?.id || ""
+                        activePlayerId: nextActivePlayerId,
+                        currentStreet: nextStreet, // Only changes if skipping betting
+                        // If we skipped betting, we should technically reset committed/bets?
+                        // But since we just dealt cards, committed/bets were already reset by processAction
+                        // before entering WAITING_FOR_CARDS. So we are good.
                     }
                 };
             });

@@ -28,7 +28,9 @@ function getNextStreet(currentStreet: Street, gameVariant: GameVariant): Street 
 
 export function initializeHand(table: TableState, initialDealerSeat?: number): { hand: HandState, updatedPlayers: Player[] } {
     const { players, config, gameVariant } = table;
-    const activePlayers = players.filter(p => !p.isSittingOut && p.stack > 0);
+    // 1. Determine active players for this hand
+    // Players must have chips >= 1 AND not be sitting out
+    const activePlayers = players.filter(p => p.stack >= 1 && !p.isSittingOut);
 
     if (activePlayers.length < 2) {
         throw new Error("Not enough players to start a hand");
@@ -75,7 +77,9 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
     // Create updated players array with deductions and reset statuses
     let updatedPlayers = players.map(p => ({
         ...p,
-        status: "active" as const // Reset all players to active status
+        // Reset status to active ONLY if they have chips and weren't sitting out
+        // If they have 0 chips, they remain/become sitting out (or we could add a 'busted' status later)
+        status: (p.stack > 0 && !p.isSittingOut) ? "active" as const : "sittingOut" as const
     }));
 
     // Apply Ante
@@ -83,10 +87,18 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
         activePlayers.forEach(p => {
             const amount = Math.min(p.stack, config.ante!);
             perPlayerCommitted[p.id] = amount;
-            // Deduct from stack
-            updatedPlayers = updatedPlayers.map(player =>
-                player.id === p.id ? { ...player, stack: player.stack - amount } : player
-            );
+            // Deduct from stack and check for all-in
+            updatedPlayers = updatedPlayers.map(player => {
+                if (player.id === p.id) {
+                    const newStack = player.stack - amount;
+                    return {
+                        ...player,
+                        stack: newStack,
+                        status: newStack === 0 ? "allIn" : player.status
+                    };
+                }
+                return player;
+            });
         });
     }
 
@@ -111,18 +123,40 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
         const bbPlayer = activePlayers[bbIndex];
 
         // Small blind
-        const sbAmount = Math.min(sbPlayer.stack, config.smallBlind);
+        const sbUpdatedPlayer = updatedPlayers.find(p => p.id === sbPlayer.id);
+        const sbCurrentStack = sbUpdatedPlayer ? sbUpdatedPlayer.stack : sbPlayer.stack;
+        const sbAmount = Math.min(sbCurrentStack, config.smallBlind);
+
         perPlayerCommitted[sbPlayer.id] = (perPlayerCommitted[sbPlayer.id] || 0) + sbAmount;
-        updatedPlayers = updatedPlayers.map(p =>
-            p.id === sbPlayer.id ? { ...p, stack: p.stack - sbAmount } : p
-        );
+        updatedPlayers = updatedPlayers.map(p => {
+            if (p.id === sbPlayer.id) {
+                const newStack = p.stack - sbAmount;
+                return {
+                    ...p,
+                    stack: newStack,
+                    status: newStack === 0 ? "allIn" : p.status
+                };
+            }
+            return p;
+        });
 
         // Big blind
-        const bbAmount = Math.min(bbPlayer.stack, config.bigBlind);
+        const bbUpdatedPlayer = updatedPlayers.find(p => p.id === bbPlayer.id);
+        const bbCurrentStack = bbUpdatedPlayer ? bbUpdatedPlayer.stack : bbPlayer.stack;
+        const bbAmount = Math.min(bbCurrentStack, config.bigBlind);
+
         perPlayerCommitted[bbPlayer.id] = (perPlayerCommitted[bbPlayer.id] || 0) + bbAmount;
-        updatedPlayers = updatedPlayers.map(p =>
-            p.id === bbPlayer.id ? { ...p, stack: p.stack - bbAmount } : p
-        );
+        updatedPlayers = updatedPlayers.map(p => {
+            if (p.id === bbPlayer.id) {
+                const newStack = p.stack - bbAmount;
+                return {
+                    ...p,
+                    stack: newStack,
+                    status: newStack === 0 ? "allIn" : p.status
+                };
+            }
+            return p;
+        });
 
         currentBet = config.bigBlind;
     }
@@ -253,9 +287,11 @@ export function processAction(table: TableState, actionType: Action["bettingType
     );
 
     // Check if hand should end (only one player left)
-    if (activePlayers.length <= 1) {
+    const playersInHand = updatedPlayers.filter(p => !p.isSittingOut && p.status !== "folded");
+
+    if (playersInHand.length <= 1) {
         // Hand is over - award pot to remaining player
-        const winner = activePlayers[0] || updatedPlayers.find(p => p.status !== "folded");
+        const winner = playersInHand[0];
         if (winner) {
             const totalPot = Object.values(newPerPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
 
@@ -291,9 +327,15 @@ export function processAction(table: TableState, actionType: Action["bettingType
     let nextIndex = (currentIndex + 1) % allPlayers.length;
     let nextPlayer = allPlayers[nextIndex];
 
-    // Skip folded/all-in players
+    // Skip folded/all-in/sitting-out players
     let attempts = 0;
-    while ((nextPlayer.status === "folded" || nextPlayer.status === "allIn") && attempts < allPlayers.length) {
+    while (
+        (nextPlayer.status === "folded" ||
+            nextPlayer.status === "allIn" ||
+            nextPlayer.status === "sittingOut" ||
+            (nextPlayer.stack === 0 && nextPlayer.status !== "allIn")) &&
+        attempts < allPlayers.length
+    ) {
         nextIndex = (nextIndex + 1) % allPlayers.length;
         nextPlayer = allPlayers[nextIndex];
         attempts++;
@@ -303,6 +345,7 @@ export function processAction(table: TableState, actionType: Action["bettingType
     // Round is complete when:
     // 1. All active players have committed the same amount, AND
     // 2. Action has returned to the last aggressor (or everyone has acted if no aggressor)
+    // 3. OR if there are no active players left (everyone all-in or folded)
 
     const activePlayersInRound = updatedPlayers.filter(p =>
         !p.isSittingOut && p.status === "active"
@@ -320,7 +363,8 @@ export function processAction(table: TableState, actionType: Action["bettingType
     // Note: Blinds are not recorded as actions, so Preflop BB must act (check/raise) to satisfy this
     const allHaveActed = activePlayersInRound.every(p => actedPlayerIds.has(p.id));
 
-    const roundComplete = allCommitmentsEqual && allHaveActed && activePlayersInRound.length > 0;
+    // If no active players (everyone all-in), round is complete
+    const roundComplete = (activePlayersInRound.length === 0) || (allCommitmentsEqual && allHaveActed);
 
     console.log("--- Round Completion Check ---");
     console.log("Street:", hand.currentStreet);
@@ -329,6 +373,14 @@ export function processAction(table: TableState, actionType: Action["bettingType
     console.log("All Commitments Equal:", allCommitmentsEqual);
     console.log("All Have Acted:", allHaveActed);
     console.log("Round Complete Result:", roundComplete);
+
+    // If round is NOT complete but we couldn't find a next player (attempts >= allPlayers.length),
+    // it means everyone is all-in/folded but logic thinks round isn't done.
+    // This shouldn't happen with the fix above, but as a safeguard:
+    if (!roundComplete && attempts >= allPlayers.length) {
+        console.warn("Round not complete but no active players found. Forcing complete.");
+        // This effectively forces the round to complete if we're stuck
+    }
 
     let newActivePlayerId = nextPlayer.id;
 

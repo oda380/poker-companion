@@ -26,7 +26,9 @@ export function ShowdownDialog() {
     if (!isShowdown) return null;
 
     const remainingPlayers = players.filter(p =>
-        !p.isSittingOut && p.status !== "folded"
+        !p.isSittingOut &&
+        p.status !== "folded" &&
+        currentHand.playerHands.some(ph => ph.playerId === p.id)
     );
 
     const totalPot = (currentHand.pots?.reduce((sum, pot) => sum + pot.amount, 0) || 0) +
@@ -146,7 +148,7 @@ export function ShowdownDialog() {
             Object.values(currentHand.perPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
 
         // Award pot to winners
-        const potPerWinner = totalPot / evaluationResult.winners.length;
+        const potPerWinner = Math.floor(totalPot / evaluationResult.winners.length);
 
         const summary = {
             id: Math.random().toString(36).substring(2, 15),

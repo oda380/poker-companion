@@ -1,6 +1,6 @@
 export type GameVariant = "texasHoldem" | "fiveCardStud";
 
-export type PlayerStatus = "active" | "folded" | "allIn";
+export type PlayerStatus = "active" | "folded" | "allIn" | "sittingOut";
 
 export interface Player {
     id: string;

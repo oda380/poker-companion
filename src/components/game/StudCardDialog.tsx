@@ -59,22 +59,74 @@ export function StudCardDialog() {
             const isLastPlayer = currentPlayerIndex === activePlayers.length - 1;
 
             if (isLastPlayer) {
-                // All players have received their card - start betting round
-                const dealerIndex = activePlayers.findIndex(p => p.seat === state.currentHand!.dealerSeat);
-                const firstToAct = activePlayers[(dealerIndex + 1) % activePlayers.length];
+                // All players have received their card - check if we can bet
+                const bettingPlayers = activePlayers.filter(p => p.status === "active");
 
-                return {
-                    ...state,
-                    currentHand: {
-                        ...state.currentHand,
-                        playerHands: updatedPlayerHands,
-                        activePlayerId: firstToAct.id,
-                        currentBet: 0,
-                        perPlayerCommitted: {}
+                if (bettingPlayers.length < 2) {
+                    // All-in scenario: Skip betting, go to next street
+                    let nextStreet = state.currentHand.currentStreet;
+                    let nextActiveId = "";
+
+                    const getNextStreet = (s: string) => {
+                        if (s === "street1") return "street2";
+                        if (s === "street2") return "street3";
+                        if (s === "street3") return "street4";
+                        if (s === "street4") return "street5";
+                        return "showdown";
+                    };
+
+                    const upcomingStreet = getNextStreet(state.currentHand.currentStreet);
+
+                    if (upcomingStreet === "showdown") {
+                        nextStreet = "showdown";
+                        nextActiveId = "";
+                    } else {
+                        nextStreet = upcomingStreet as any;
+                        nextActiveId = "WAITING_FOR_STUD_CARD";
                     }
-                };
+
+                    return {
+                        ...state,
+                        currentHand: {
+                            ...state.currentHand,
+                            playerHands: updatedPlayerHands,
+                            activePlayerId: nextActiveId,
+                            currentStreet: nextStreet,
+                            currentBet: 0,
+                            perPlayerCommitted: {}
+                        }
+                    };
+                } else {
+                    // Normal betting round
+                    const dealerIndex = activePlayers.findIndex(p => p.seat === state.currentHand!.dealerSeat);
+                    // Find next active player (not all-in)
+                    // Note: In Stud, high hand usually acts first, but for MVP we use rotation
+                    // TODO: Implement high-hand-acts-first logic for Stud
+
+                    // Simple rotation for now, skipping all-ins
+                    let nextIdx = (dealerIndex + 1) % activePlayers.length;
+                    let nextPlayer = activePlayers[nextIdx];
+                    let attempts = 0;
+
+                    while (nextPlayer.status === "allIn" && attempts < activePlayers.length) {
+                        nextIdx = (nextIdx + 1) % activePlayers.length;
+                        nextPlayer = activePlayers[nextIdx];
+                        attempts++;
+                    }
+
+                    return {
+                        ...state,
+                        currentHand: {
+                            ...state.currentHand,
+                            playerHands: updatedPlayerHands,
+                            activePlayerId: nextPlayer.id,
+                            currentBet: 0,
+                            perPlayerCommitted: {}
+                        }
+                    };
+                }
             } else {
-                // Move to next player
+                // Move to next player for dealing
                 return {
                     ...state,
                     currentHand: {

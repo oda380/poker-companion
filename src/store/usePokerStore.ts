@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { temporal } from "zundo";
 import { TableState, Player, GameVariant, TableConfig } from "../types";
 import { initializeHand, processAction } from "../lib/game-logic";
+import { toast } from "sonner";
 
 interface PokerStore extends TableState {
     // Actions
@@ -18,6 +19,7 @@ interface PokerStore extends TableState {
 
     // Betting Actions
     playerAction: (actionType: "fold" | "check" | "call" | "bet" | "raise" | "allIn", amount?: number) => void;
+    rebuyPlayer: (playerId: string, amount: number) => void;
 
     // UI State (excluded from Undo)
     ui: {
@@ -99,6 +101,11 @@ export const usePokerStore = create<PokerStore>()(
                             return newState;
                         } catch (e) {
                             console.error("Failed to start hand:", e);
+                            // Show user-facing error
+                            toast.error("Cannot Start Hand", {
+                                description: e instanceof Error ? e.message : "Not enough active players.",
+                                duration: 4000,
+                            });
                             return state;
                         }
                     });
@@ -197,6 +204,14 @@ export const usePokerStore = create<PokerStore>()(
                         }
                     });
                 },
+
+                rebuyPlayer: (playerId, amount) => set((state) => ({
+                    players: state.players.map(p =>
+                        p.id === playerId
+                            ? { ...p, stack: p.stack + amount }
+                            : p
+                    )
+                })),
 
                 setUiState: (partialUi) => set((state) => ({
                     ui: { ...state.ui, ...partialUi }

@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { Card } from "./Card";
 import { ChipStack } from "./Chip";
+import { RebuyDialog } from "./RebuyDialog";
+import { usePokerStore } from "@/store/usePokerStore";
 
 interface PlayerRowProps {
     player: Player;
@@ -14,6 +16,15 @@ interface PlayerRowProps {
 }
 
 export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowProps) {
+    const currentHand = usePokerStore((state) => state.currentHand);
+    const isHandActive = !!currentHand;
+
+    // Show Bust/Rebuy if stack is 0 AND:
+    // 1. Hand is NOT active (between hands), OR
+    // 2. Player is sitting out (busted in previous hand)
+    // This prevents showing it for players who are All-In during the current hand
+    const showBust = player.stack === 0 && (!isHandActive || player.status === "sittingOut");
+
     return (
         <motion.div
             layout
@@ -96,6 +107,13 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
 
                 {player.status === "folded" && <Badge variant="secondary" className="bg-gray-700 text-gray-200">Fold</Badge>}
                 {player.status === "allIn" && <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg">All-In</Badge>}
+
+                {showBust && (
+                    <>
+                        <Badge variant="outline" className="border-red-500/50 text-red-500 bg-red-500/10">Bust</Badge>
+                        <RebuyDialog playerId={player.id} playerName={player.name} />
+                    </>
+                )}
             </div>
         </motion.div>
     );

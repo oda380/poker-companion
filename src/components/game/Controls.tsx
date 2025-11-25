@@ -20,6 +20,10 @@ export function Controls() {
     // Logic to determine valid actions based on current state would go here
     // For MVP, we show all relevant buttons
 
+    const activePlayerId = currentHand.activePlayerId;
+    const activePlayer = usePokerStore(state => state.players.find(p => p.id === activePlayerId));
+    const playerStack = activePlayer?.stack || 0;
+
     const handleBet = (amount: number) => {
         // Determine if it's a bet or raise based on currentBet
         const type = currentBet === 0 ? "bet" : "raise";
@@ -34,7 +38,7 @@ export function Controls() {
     };
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-slate-900 via-slate-900/98 to-transparent backdrop-blur-lg border-t border-white/10 grid grid-cols-3 gap-3 shadow-2xl">
+        <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border grid grid-cols-3 gap-3 shadow-2xl pb-8">
             <Button
                 variant="secondary"
                 size="lg"
@@ -76,11 +80,21 @@ export function Controls() {
                     <div className="h-full flex flex-col gap-4 p-2">
                         <div className="text-center text-2xl font-bold">Bet Amount</div>
 
-                        {currentBet > 0 && (
-                            <div className="flex gap-2">
-                                <Button className="flex-1 h-12" onClick={handleCall}>Call {currentBet}</Button>
-                            </div>
-                        )}
+                        {currentBet > 0 && (() => {
+                            const activeId = currentHand.activePlayerId || "";
+                            const playerCommitted = currentHand.perPlayerCommitted[activeId] || 0;
+                            const amountToCall = currentBet - playerCommitted;
+                            const actualCallAmount = Math.min(amountToCall, playerStack);
+                            const isAllIn = actualCallAmount < amountToCall || actualCallAmount === playerStack;
+
+                            return (
+                                <div className="flex gap-2">
+                                    <Button className="flex-1 h-12" onClick={handleCall}>
+                                        {isAllIn ? `Call All-In (${actualCallAmount})` : `Call ${currentBet}`}
+                                    </Button>
+                                </div>
+                            );
+                        })()}
 
                         <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as any)} className="flex-1 flex flex-col">
                             <TabsList className="grid w-full grid-cols-2">
@@ -96,7 +110,7 @@ export function Controls() {
                                 <TabsContent value="slider" className="space-y-8 mt-0">
                                     <Slider
                                         min={minRaise}
-                                        max={1000} // Should be active player stack
+                                        max={playerStack}
                                         step={1}
                                         value={[betAmount]}
                                         onValueChange={([v]) => setBetAmount(v)}
@@ -105,7 +119,7 @@ export function Controls() {
                                         <Button variant="outline" onClick={() => setBetAmount(minRaise)}>Min</Button>
                                         <Button variant="outline" onClick={() => setBetAmount(currentBet * 2)}>2x</Button>
                                         <Button variant="outline" onClick={() => setBetAmount(currentBet * 3)}>3x</Button>
-                                        <Button variant="outline" onClick={() => setBetAmount(1000)}>All-In</Button>
+                                        <Button variant="outline" onClick={() => setBetAmount(playerStack)}>All-In</Button>
                                     </div>
                                 </TabsContent>
 

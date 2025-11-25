@@ -16,7 +16,7 @@ export function InitialDealDialog() {
         console.log("InitialDealDialog: Rendering because activePlayerId is WAITING_FOR_DEAL_CONFIRM");
     }
 
-    const activePlayers = players.filter(p => !p.isSittingOut && p.status !== "folded");
+    const activePlayers = players.filter(p => !p.isSittingOut && p.status === "active");
     const isHoldem = currentHand.gameVariant === "texasHoldem";
     const isStud = currentHand.gameVariant === "fiveCardStud";
 
