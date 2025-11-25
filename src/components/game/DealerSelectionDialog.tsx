@@ -12,6 +12,7 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
     const handHistory = usePokerStore((state) => state.handHistory);
     const currentHand = usePokerStore((state) => state.currentHand);
     const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
+    const [isReady, setIsReady] = useState(false);
 
     // Only show for first hand and before hand starts
     const isFirstHand = handHistory.length === 0 && !currentHand;
@@ -21,12 +22,16 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
         if (isFirstHand) {
             console.log("DealerSelectionDialog: Resetting selectedSeat");
             setSelectedSeat(null);
+            setIsReady(false);
 
             // Force layout recalculation on mobile to fix touch offset
             // Reading offsetHeight triggers a reflow
             setTimeout(() => {
                 const _ = document.body.offsetHeight;
-            }, 0);
+                setIsReady(true);
+            }, 50);
+        } else {
+            setIsReady(false);
         }
     }, [isFirstHand]);
 
@@ -49,42 +54,46 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
     return (
         <Dialog key={players.length > 0 ? players[0].id : 'no-players'} open={isFirstHand} onOpenChange={() => { }}>
             <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Select Initial Dealer</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                        Choose who will be the dealer for the first hand. The dealer button will rotate clockwise after each hand.
-                    </p>
+                {isReady && (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Select Initial Dealer</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                                Choose who will be the dealer for the first hand. The dealer button will rotate clockwise after each hand.
+                            </p>
 
-                    <div className="space-y-2">
-                        {players.map((player) => (
+                            <div className="space-y-2">
+                                {players.map((player) => (
+                                    <Button
+                                        key={player.id}
+                                        variant={selectedSeat === player.seat ? "default" : "outline"}
+                                        className="w-full h-14 text-lg justify-start"
+                                        onClick={() => {
+                                            console.log("Selected seat:", player.seat);
+                                            setSelectedSeat(player.seat);
+                                        }}
+                                    >
+                                        <div className="flex items-center justify-between w-full">
+                                            <span>{player.name}</span>
+                                            <span className="text-sm text-muted-foreground">Seat {player.seat}</span>
+                                        </div>
+                                    </Button>
+                                ))}
+                            </div>
+
                             <Button
-                                key={player.id}
-                                variant={selectedSeat === player.seat ? "default" : "outline"}
-                                className="w-full h-14 text-lg justify-start"
-                                onClick={() => {
-                                    console.log("Selected seat:", player.seat);
-                                    setSelectedSeat(player.seat);
-                                }}
+                                size="lg"
+                                className="w-full"
+                                onClick={handleConfirm}
+                                disabled={selectedSeat === null}
                             >
-                                <div className="flex items-center justify-between w-full">
-                                    <span>{player.name}</span>
-                                    <span className="text-sm text-muted-foreground">Seat {player.seat}</span>
-                                </div>
+                                Confirm Dealer
                             </Button>
-                        ))}
-                    </div>
-
-                    <Button
-                        size="lg"
-                        className="w-full"
-                        onClick={handleConfirm}
-                        disabled={selectedSeat === null}
-                    >
-                        Confirm Dealer
-                    </Button>
-                </div>
+                        </div>
+                    </>
+                )}
             </DialogContent>
         </Dialog>
     );

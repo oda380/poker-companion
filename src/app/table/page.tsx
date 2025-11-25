@@ -27,6 +27,7 @@ import {
 
 export default function TablePage() {
     const router = useRouter();
+    const tableId = usePokerStore((state) => state.id);
     const tableName = usePokerStore((state) => state.name);
     const players = usePokerStore((state) => state.players);
     const currentHand = usePokerStore((state) => state.currentHand);
@@ -60,8 +61,6 @@ export default function TablePage() {
     }, [players, router]);
 
     if (players.length === 0) return null;
-
-    const tableId = usePokerStore((state) => state.id);
 
     return (
         <div key={tableId} className="min-h-screen bg-background flex flex-col">
