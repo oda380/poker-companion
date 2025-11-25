@@ -12,7 +12,7 @@ import { ShowdownDialog } from "@/components/game/ShowdownDialog";
 import { DealerSelectionDialog } from "@/components/game/DealerSelectionDialog";
 import { CommunityCardDialog } from "@/components/game/CommunityCardDialog";
 import { StudCardDialog } from "@/components/game/StudCardDialog";
-import { Settings, History, RotateCcw, Home, Users, Menu, BookOpen } from "lucide-react";
+import { Settings, RotateCcw, Menu, Users, BookOpen, History, Home } from "lucide-react";
 import { InitialDealDialog } from "@/components/game/InitialDealDialog";
 import { ChipAnimation } from "@/components/game/ChipAnimation";
 import { SettingsDialog } from "@/components/game/SettingsDialog";
@@ -132,6 +132,10 @@ export default function TablePage() {
                             <DropdownMenuItem onClick={() => router.push("/setup")} className="focus:bg-primary/20">
                                 <Users className="w-4 h-4 mr-2" />
                                 Table Setup
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push("/history")} className="focus:bg-primary/20">
+                                <History className="w-4 h-4 mr-2" />
+                                Game History
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-white/10" />
                             <DropdownMenuItem onClick={() => undo()} className="focus:bg-primary/20">

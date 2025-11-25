@@ -134,7 +134,7 @@ export const usePokerStore = create<PokerStore>()(
                         document.body.removeAttribute('data-scroll-locked');
                     }
 
-                    set({
+                    const newState = {
                         // Completely replace state to avoid persistence merge issues
                         ...initialState,
                         id: crypto.randomUUID(),
@@ -150,6 +150,15 @@ export const usePokerStore = create<PokerStore>()(
                             isHandHistoryOpen: false,
                             activeModal: null,
                         }
+                    };
+
+                    set(newState);
+
+                    // Save new session to DB
+                    // We need to wait a bit for players to be added in setup, 
+                    // but we can create the initial record here.
+                    import('../lib/db').then(({ saveSession }) => {
+                        saveSession(newState);
                     });
                 },
                 // Note: Zustand's set merges by default. To replace, we usually need the second arg to be true, 
@@ -160,7 +169,20 @@ export const usePokerStore = create<PokerStore>()(
                 playerAction: (actionType, amount) => {
                     set((state) => {
                         try {
-                            return processAction(state, actionType, amount);
+                            const oldHand = state.currentHand;
+                            const newState = processAction(state, actionType, amount);
+
+                            // Check if hand finished (transitioned from having a hand to undefined/finished)
+                            // processAction sets currentHand to undefined when hand ends via fold
+                            if (oldHand && !newState.currentHand && newState.handHistory.length > state.handHistory.length) {
+                                const summary = newState.handHistory[newState.handHistory.length - 1];
+                                // Save to DB asynchronously
+                                import('../lib/db').then(({ saveHand }) => {
+                                    saveHand(state.id, oldHand, summary);
+                                });
+                            }
+
+                            return newState;
                         } catch (e) {
                             console.error("Action failed:", e);
                             return state;

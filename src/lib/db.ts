@@ -1,0 +1,81 @@
+import Dexie, { Table } from 'dexie';
+import { HandState, HandSummary, TableState, Player } from '../types';
+
+// Define DB Schema Types
+export interface GameSession {
+    id: string;
+    name: string;
+    gameVariant: string;
+    startTime: string;
+    lastUpdated: string;
+    finalPlayers: Player[];
+}
+
+export interface ArchivedHand {
+    id: string;
+    sessionId: string;
+    handNumber: number;
+    timestamp: string;
+    summary: HandSummary;
+    fullState: HandState;
+}
+
+export class PokerDatabase extends Dexie {
+    sessions!: Table<GameSession>;
+    hands!: Table<ArchivedHand>;
+
+    constructor() {
+        super('PokerCompanionDB');
+        this.version(1).stores({
+            sessions: 'id, startTime, lastUpdated',
+            hands: 'id, sessionId, handNumber, timestamp'
+        });
+    }
+}
+
+export const db = new PokerDatabase();
+
+// Helper Functions
+
+export async function saveSession(state: TableState) {
+    try {
+        await db.sessions.put({
+            id: state.id,
+            name: state.name,
+            gameVariant: state.gameVariant,
+            startTime: state.createdAt,
+            lastUpdated: new Date().toISOString(),
+            finalPlayers: state.players
+        });
+    } catch (error) {
+        console.error("Failed to save session:", error);
+    }
+}
+
+export async function saveHand(sessionId: string, hand: HandState, summary: HandSummary) {
+    try {
+        // Ensure session exists/is updated
+        await db.sessions.update(sessionId, {
+            lastUpdated: new Date().toISOString()
+        });
+
+        await db.hands.put({
+            id: summary.id,
+            sessionId: sessionId,
+            handNumber: hand.handNumber,
+            timestamp: summary.createdAt,
+            summary: summary,
+            fullState: hand
+        });
+    } catch (error) {
+        console.error("Failed to save hand:", error);
+    }
+}
+
+export async function getSessions() {
+    return await db.sessions.orderBy('lastUpdated').reverse().toArray();
+}
+
+export async function getSessionHands(sessionId: string) {
+    return await db.hands.where('sessionId').equals(sessionId).sortBy('handNumber');
+}

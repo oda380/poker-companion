@@ -148,6 +148,25 @@ export function ShowdownDialog() {
         // Award pot to winners
         const potPerWinner = totalPot / evaluationResult.winners.length;
 
+        const summary = {
+            id: Math.random().toString(36).substring(2, 15),
+            handNumber: currentHand.handNumber,
+            gameVariant: currentHand.gameVariant,
+            dealerSeat: currentHand.dealerSeat,
+            winners: evaluationResult.winners.map(w => ({
+                playerId: w.playerId,
+                potShare: potPerWinner,
+                handDescription: w.handDescription
+            })),
+            totalPot,
+            createdAt: new Date().toISOString()
+        };
+
+        // Save to DB before clearing state
+        import('@/lib/db').then(({ saveHand }) => {
+            saveHand(usePokerStore.getState().id, currentHand, summary);
+        });
+
         usePokerStore.setState((state) => ({
             ...state,
             players: state.players.map(p => {
@@ -157,19 +176,7 @@ export function ShowdownDialog() {
             currentHand: undefined,
             handHistory: [
                 ...state.handHistory,
-                {
-                    id: Math.random().toString(36).substring(2, 15),
-                    handNumber: currentHand.handNumber,
-                    gameVariant: currentHand.gameVariant,
-                    dealerSeat: currentHand.dealerSeat,
-                    winners: evaluationResult.winners.map(w => ({
-                        playerId: w.playerId,
-                        potShare: potPerWinner,
-                        handDescription: w.handDescription
-                    })),
-                    totalPot,
-                    createdAt: new Date().toISOString()
-                }
+                summary
             ]
         }));
 

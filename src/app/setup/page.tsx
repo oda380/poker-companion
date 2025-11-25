@@ -238,6 +238,16 @@ export default function SetupPage() {
                                 Tap the table name above to continue
                             </p>
                         )}
+
+                        <div className="pt-4 flex justify-center">
+                            <Button
+                                variant="link"
+                                className="text-muted-foreground hover:text-primary"
+                                onClick={() => router.push("/history")}
+                            >
+                                View Game History
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </motion.div>
