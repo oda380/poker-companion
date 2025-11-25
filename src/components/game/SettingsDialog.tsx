@@ -146,22 +146,26 @@ export function SettingsDialog() {
 
                     <TabsContent value="game" className="space-y-4 py-4">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Small Blind</Label>
-                                <Input
-                                    type="number"
-                                    value={config.smallBlind || 0}
-                                    onChange={(e) => handleConfigChange("smallBlind", Number(e.target.value))}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Big Blind</Label>
-                                <Input
-                                    type="number"
-                                    value={config.bigBlind || 0}
-                                    onChange={(e) => handleConfigChange("bigBlind", Number(e.target.value))}
-                                />
-                            </div>
+                            {gameVariant !== "fiveCardStud" && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label>Small Blind</Label>
+                                        <Input
+                                            type="number"
+                                            value={config.smallBlind || 0}
+                                            onChange={(e) => handleConfigChange("smallBlind", Number(e.target.value))}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Big Blind</Label>
+                                        <Input
+                                            type="number"
+                                            value={config.bigBlind || 0}
+                                            onChange={(e) => handleConfigChange("bigBlind", Number(e.target.value))}
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div className="space-y-2">
                                 <Label>Ante</Label>
                                 <Input
