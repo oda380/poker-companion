@@ -31,7 +31,7 @@ export default function Home() {
           </motion.div>
 
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
               Poker Companion
             </h1>
             <p className="text-lg text-muted-foreground max-w-sm mx-auto">

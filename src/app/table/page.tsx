@@ -27,6 +27,7 @@ import {
 
 export default function TablePage() {
     const router = useRouter();
+    const tableName = usePokerStore((state) => state.name);
     const players = usePokerStore((state) => state.players);
     const currentHand = usePokerStore((state) => state.currentHand);
     const handHistory = usePokerStore((state) => state.handHistory);
@@ -69,8 +70,8 @@ export default function TablePage() {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <div className="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent">
-                        Friday Night Poker
+                    <div className="font-bold text-lg tracking-tight text-foreground">
+                        {tableName}
                     </div>
                 </div>
                 <div className="flex gap-2">
