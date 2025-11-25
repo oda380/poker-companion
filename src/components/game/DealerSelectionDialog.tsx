@@ -35,8 +35,11 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
             document.body.appendChild(hiddenInput);
 
             setTimeout(() => {
-                // 1. Force reflow
-                const _ = document.body.offsetHeight;
+                // 1. Force full document reflow by manipulating documentElement
+                const originalHeight = document.documentElement.style.height;
+                document.documentElement.style.height = '100.1vh';
+                const _ = document.documentElement.offsetHeight; // Trigger reflow
+                document.documentElement.style.height = originalHeight;
 
                 // 2. Trigger input focus (forces viewport recalc)
                 hiddenInput.focus();
@@ -47,15 +50,20 @@ export function DealerSelectionDialog({ onSelectDealer }: DealerSelectionDialogP
                         document.body.removeChild(hiddenInput);
                     }
 
-                    // 3. Force resize event as backup
+                    // 3. Force resize event
                     window.dispatchEvent(new Event('resize'));
 
-                    // Wait a bit more before showing content
+                    // 4. Force visual viewport update if available
+                    if (window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', () => { }, { once: true });
+                    }
+
+                    // Wait before showing content
                     setTimeout(() => {
                         setIsReady(true);
-                    }, 100);
-                }, 100);
-            }, 150);
+                    }, 150);
+                }, 150);
+            }, 200);
         } else {
             setIsReady(false);
         }
