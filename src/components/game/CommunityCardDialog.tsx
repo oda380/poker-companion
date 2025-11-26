@@ -40,19 +40,34 @@ export function CommunityCardDialog() {
     }
 
     const cardsNeeded = currentHand.currentStreet === "flop" ? 3 : 1;
+    const [activeSlot, setActiveSlot] = useState(0);
+
+    // Initialize/Reset selectedCards when street changes or dialog opens
+    useEffect(() => {
+        if (needsCardInput) {
+            setSelectedCards(Array(cardsNeeded).fill(""));
+            setActiveSlot(0);
+        }
+    }, [needsCardInput, cardsNeeded]);
 
     const handleCardSelect = (cardCode: string) => {
-        if (selectedCards.length < cardsNeeded) {
-            setSelectedCards([...selectedCards, cardCode]);
+        const newCards = [...selectedCards];
+
+        // Ensure array is big enough
+        while (newCards.length < cardsNeeded) newCards.push("");
+
+        newCards[activeSlot] = cardCode;
+        setSelectedCards(newCards);
+
+        // Auto-advance
+        if (activeSlot < cardsNeeded - 1) {
+            setActiveSlot(activeSlot + 1);
         }
     };
 
-    const handleRemoveLast = () => {
-        setSelectedCards(selectedCards.slice(0, -1));
-    };
-
     const handleConfirm = () => {
-        if (selectedCards.length === cardsNeeded) {
+        const filledCards = selectedCards.filter(c => c !== "");
+        if (filledCards.length === cardsNeeded) {
             // Update the hand with the selected cards
             usePokerStore.setState((state) => {
                 if (!state.currentHand) return state;
@@ -77,10 +92,6 @@ export function CommunityCardDialog() {
 
                 if (activePlayers.length < 2) {
                     // All-in scenario (or only 1 active): Skip betting, go to next street
-                    // We need to advance the street state immediately
-                    // Note: This is a simplified runout. Ideally we'd loop, but for now we just
-                    // set the state to "WAITING_FOR_CARDS" for the *next* street.
-
                     const upcomingStreet = getNextStreetName(state.currentHand.currentStreet);
 
                     if (upcomingStreet === "showdown") {
@@ -92,10 +103,6 @@ export function CommunityCardDialog() {
                     }
                 } else {
                     // Normal betting round
-                    // First to act is left of dealer
-                    const dealerIndex = activePlayers.findIndex(p => p.seat === state.currentHand!.dealerSeat);
-                    // If dealer not found (e.g. folded), start from seat 0? 
-                    // Better: sort by seat and find next active after dealerSeat
                     const sortedActive = [...activePlayers].sort((a, b) => a.seat - b.seat);
                     const nextActive = sortedActive.find(p => p.seat > state.currentHand!.dealerSeat) || sortedActive[0];
 
@@ -106,18 +113,17 @@ export function CommunityCardDialog() {
                     ...state,
                     currentHand: {
                         ...state.currentHand,
-                        board: [...state.currentHand.board, ...selectedCards],
+                        board: [...state.currentHand.board, ...filledCards],
                         activePlayerId: nextActivePlayerId,
-                        currentStreet: nextStreet, // Only changes if skipping betting
-                        // If we skipped betting, we should technically reset committed/bets?
-                        // But since we just dealt cards, committed/bets were already reset by processAction
-                        // before entering WAITING_FOR_CARDS. So we are good.
+                        currentStreet: nextStreet,
                     }
                 };
             });
             setSelectedCards([]);
         }
     };
+
+    const isComplete = selectedCards.filter(c => c !== "").length === cardsNeeded;
 
     return (
         <Dialog open={needsCardInput && isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
@@ -136,39 +142,56 @@ export function CommunityCardDialog() {
                         <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold tracking-wider text-sm border border-primary/20">
                             {streetName} PHASE
                         </div>
-                        <div className="flex justify-center gap-2 min-h-[100px] items-center">
-                            {selectedCards.map((card, i) => (
-                                <Card key={i} code={card} faceUp={true} size="medium" />
-                            ))}
-                            {Array.from({ length: cardsNeeded - selectedCards.length }).map((_, i) => (
-                                <div
-                                    key={`empty-${i}`}
-                                    className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
-                                />
-                            ))}
+                        <div className="flex justify-center gap-4 min-h-[120px] items-center">
+                            {Array.from({ length: cardsNeeded }).map((_, i) => {
+                                const card = selectedCards[i];
+                                const isActive = i === activeSlot;
+
+                                return (
+                                    <div
+                                        key={i}
+                                        onClick={() => setActiveSlot(i)}
+                                        className={`relative cursor-pointer transition-all ${isActive
+                                                ? "scale-110 z-10"
+                                                : "hover:scale-105"
+                                            }`}
+                                    >
+                                        {card ? (
+                                            <div className={isActive ? "ring-4 ring-primary ring-offset-2 ring-offset-background rounded-lg" : ""}>
+                                                <Card code={card} faceUp={true} size="large" />
+                                            </div>
+                                        ) : (
+                                            <div className={`w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed flex items-center justify-center ${isActive ? "border-primary ring-4 ring-primary ring-offset-2 ring-offset-background" : "border-muted-foreground/30"
+                                                }`}>
+                                                <span className="text-xs text-muted-foreground font-medium">
+                                                    Card {i + 1}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {isActive && (
+                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
+                                                EDITING
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <div className="h-64">
                         <CardKeyboard
                             onCardSelect={handleCardSelect}
-                            usedCards={[...currentHand.board, ...selectedCards]}
+                            usedCards={[...currentHand.board, ...selectedCards.filter(c => c !== "")]}
                         />
                     </div>
 
                     <div className="flex gap-2">
                         <Button
-                            variant="outline"
-                            className="flex-1"
-                            onClick={handleRemoveLast}
-                            disabled={selectedCards.length === 0}
-                        >
-                            Remove Last
-                        </Button>
-                        <Button
-                            className="flex-1"
+                            className="w-full h-12 text-lg font-bold"
                             onClick={handleConfirm}
-                            disabled={selectedCards.length !== cardsNeeded}
+                            disabled={!isComplete}
                         >
                             Confirm {streetName}
                         </Button>

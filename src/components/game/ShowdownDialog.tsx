@@ -22,6 +22,7 @@ export function ShowdownDialog() {
     const [currentInputPlayer, setCurrentInputPlayer] = useState<string | null>(null);
     const [selectedCards, setSelectedCards] = useState<string[]>([]);
     const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | null>(null);
+    const [activeSlot, setActiveSlot] = useState(0);
 
     // Only show if hand is in showdown phase (no active player)
     const isShowdown = currentHand && currentHand.activePlayerId === "";
@@ -38,8 +39,6 @@ export function ShowdownDialog() {
 
     if (!isShowdown) return null;
 
-    // Floating button removed - Controls.tsx will handle the "Resume" button
-
     const remainingPlayers = players.filter(p =>
         !p.isSittingOut &&
         p.status !== "folded" &&
@@ -52,41 +51,41 @@ export function ShowdownDialog() {
     // For Stud, extract face-up cards and check if hole cards need input
     const isStud = currentHand.gameVariant === "fiveCardStud";
 
-    // Auto-populate logic removed to ensure hole card input is triggered
-
-
     // Check if we're still inputting hands
-    // For Stud: need to input hole card (1 card) for each player
-    // For Hold'em: need to input 2 hole cards for each player
     const playersNeedingInput = remainingPlayers.filter(p => {
         const hand = playerHands[p.id];
         if (isStud) {
-            // Stud: need exactly 1 more card (the hole card)
             return !hand || hand.length < 1;
         } else {
-            // Hold'em: need 2 cards
             return !hand || hand.length < 2;
         }
     });
     const needsInput = playersNeedingInput.length > 0;
 
     const handleCardSelect = (cardCode: string) => {
-        const maxCards = isStud ? 1 : 2; // Stud: 1 hole card, Hold'em: 2 hole cards
-        if (selectedCards.length < maxCards) {
-            setSelectedCards([...selectedCards, cardCode]);
-        }
-    };
+        const maxCards = isStud ? 1 : 2;
+        const newCards = [...selectedCards];
 
-    const handleRemoveLast = () => {
-        setSelectedCards(selectedCards.slice(0, -1));
+        // Ensure array is big enough (fill with empty strings if needed)
+        while (newCards.length < maxCards) newCards.push("");
+
+        newCards[activeSlot] = cardCode;
+        setSelectedCards(newCards);
+
+        // Auto-advance if not last slot
+        if (activeSlot < maxCards - 1) {
+            setActiveSlot(activeSlot + 1);
+        }
     };
 
     const handleConfirmHand = () => {
         const requiredCards = isStud ? 1 : 2;
-        if (currentInputPlayer && selectedCards.length === requiredCards) {
+        // Check if all slots are filled (no empty strings)
+        const filledCards = selectedCards.filter(c => c !== "");
+        if (currentInputPlayer && filledCards.length === requiredCards) {
             setPlayerHands({
                 ...playerHands,
-                [currentInputPlayer]: selectedCards
+                [currentInputPlayer]: filledCards
             });
             setSelectedCards([]);
             setCurrentInputPlayer(null);
@@ -95,7 +94,10 @@ export function ShowdownDialog() {
 
     const handleStartInput = (playerId: string) => {
         setCurrentInputPlayer(playerId);
-        setSelectedCards([]);
+        // Initialize with empty strings for the required number of cards
+        const maxCards = isStud ? 1 : 2;
+        setSelectedCards(Array(maxCards).fill(""));
+        setActiveSlot(0);
     };
 
     const handleEvaluate = () => {
@@ -218,8 +220,11 @@ export function ShowdownDialog() {
             // Otherwise, close dialog (undo)
             usePokerStore.temporal.getState().undo();
         }
-        setUiState({ isShowdownDialogOpen: false }); // Also close the dialog if user clicks outside or presses escape
+        setUiState({ isShowdownDialogOpen: false });
     };
+
+    // Helper to check if hand is complete
+    const isHandComplete = selectedCards.filter(c => c !== "").length === (isStud ? 1 : 2);
 
     return (
         <Dialog open={isShowdown && isShowdownDialogOpen} onOpenChange={(open) => !open && setUiState({ isShowdownDialogOpen: false })}>
@@ -347,9 +352,6 @@ export function ShowdownDialog() {
                                                 .map((card, i) => (
                                                     <motion.div
                                                         key={`faceup-${i}`}
-                                                        initial={{ scale: 0.8, opacity: 0 }}
-                                                        animate={{ scale: 1, opacity: 1 }}
-                                                        transition={{ delay: i * 0.1 }}
                                                         className="opacity-90 grayscale-[0.3]"
                                                     >
                                                         <Card code={card.code} faceUp={true} size="large" />
@@ -358,25 +360,40 @@ export function ShowdownDialog() {
                                             }
 
                                             {/* Input Slots for Hole Card(s) */}
-                                            {selectedCards.map((card, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    initial={{ scale: 0, rotate: -10 }}
-                                                    animate={{ scale: 1, rotate: 0 }}
-                                                >
-                                                    <Card code={card} faceUp={true} size="large" />
-                                                </motion.div>
-                                            ))}
-                                            {Array.from({ length: (isStud ? 1 : 2) - selectedCards.length }).map((_, i) => (
-                                                <div
-                                                    key={`empty-${i}`}
-                                                    className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center"
-                                                >
-                                                    <span className="text-xs text-muted-foreground font-medium">
-                                                        {isStud ? "Hole Card" : "Select Card"}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                            {Array.from({ length: isStud ? 1 : 2 }).map((_, i) => {
+                                                const card = selectedCards[i];
+                                                const isActive = i === activeSlot;
+
+                                                return (
+                                                    <motion.div
+                                                        key={i}
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => setActiveSlot(i)}
+                                                        className={`relative cursor-pointer rounded-xl transition-all ${isActive
+                                                                ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
+                                                                : "hover:ring-2 hover:ring-primary/50"
+                                                            }`}
+                                                    >
+                                                        {card ? (
+                                                            <Card code={card} faceUp={true} size="large" />
+                                                        ) : (
+                                                            <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center">
+                                                                <span className="text-xs text-muted-foreground font-medium">
+                                                                    {isStud ? "Hole Card" : `Card ${i + 1}`}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Active Indicator */}
+                                                        {isActive && (
+                                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
+                                                                EDITING
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
@@ -386,24 +403,16 @@ export function ShowdownDialog() {
                                             usedCards={[
                                                 ...currentHand.board,
                                                 ...Object.values(playerHands).flat(),
-                                                ...selectedCards
+                                                ...selectedCards.filter(c => c !== "")
                                             ]}
                                         />
                                     </div>
 
                                     <div className="flex gap-3">
                                         <Button
-                                            variant="outline"
-                                            className="flex-1 h-12 text-lg"
-                                            onClick={handleRemoveLast}
-                                            disabled={selectedCards.length === 0}
-                                        >
-                                            Remove Last
-                                        </Button>
-                                        <Button
-                                            className="flex-1 h-12 text-lg font-bold"
+                                            className="w-full h-12 text-lg font-bold"
                                             onClick={handleConfirmHand}
-                                            disabled={selectedCards.length !== (isStud ? 1 : 2)}
+                                            disabled={!isHandComplete}
                                         >
                                             Confirm Hand
                                         </Button>
@@ -483,4 +492,3 @@ export function ShowdownDialog() {
         </Dialog>
     );
 }
-
