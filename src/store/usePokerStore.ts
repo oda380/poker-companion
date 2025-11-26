@@ -3,6 +3,7 @@ import { temporal } from "zundo";
 import { TableState, Player, GameVariant, TableConfig } from "../types";
 import { initializeHand, processAction } from "../lib/game-logic";
 import { toast } from "sonner";
+import { persist } from "zustand/middleware";
 
 interface PokerStore extends TableState {
     // Actions
@@ -10,6 +11,7 @@ interface PokerStore extends TableState {
     addPlayer: (name: string, seat: number, stack: number) => void;
     removePlayer: (playerId: string) => void;
     updatePlayerStatus: (playerId: string, status: Player["status"]) => void;
+    updatePlayerName: (playerId: string, name: string) => void;
 
     // Game Flow Actions
     startNewHand: (dealerSeat?: number) => boolean;
@@ -44,8 +46,6 @@ const initialState: TableState = {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
 };
-
-import { persist } from "zustand/middleware";
 
 export const usePokerStore = create<PokerStore>()(
     persist(
@@ -82,6 +82,10 @@ export const usePokerStore = create<PokerStore>()(
 
                 updatePlayerStatus: (playerId, status) => set((state) => ({
                     players: state.players.map((p) => p.id === playerId ? { ...p, status } : p)
+                })),
+
+                updatePlayerName: (playerId, name) => set((state) => ({
+                    players: state.players.map((p) => p.id === playerId ? { ...p, name } : p)
                 })),
 
                 startNewHand: (dealerSeat?: number) => {
@@ -176,10 +180,6 @@ export const usePokerStore = create<PokerStore>()(
                         saveSession(newState);
                     });
                 },
-                // Note: Zustand's set merges by default. To replace, we usually need the second arg to be true, 
-                // but with middleware it depends. 
-                // However, since we are spreading ...initialState and overriding everything, it should be fine.
-                // The key addition here is ensuring we don't rely on implicit behavior.
 
                 playerAction: (actionType, amount) => {
                     set((state) => {

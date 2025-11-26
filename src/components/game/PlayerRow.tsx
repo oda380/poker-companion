@@ -75,11 +75,11 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                     )}
                 </div>
 
-                <div>
+                <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <div className="font-bold text-lg leading-none text-foreground">{player.name}</div>
+                        <div className="font-bold text-lg leading-none text-foreground truncate max-w-[100px] sm:max-w-[140px]" title={player.name}>{player.name}</div>
                         {player.wins > 0 && (
-                            <div className="flex items-center gap-0.5 text-yellow-500" title={`${player.wins} wins`}>
+                            <div className="flex items-center gap-0.5 text-yellow-500 shrink-0" title={`${player.wins} wins`}>
                                 <Trophy className="w-3 h-3 fill-yellow-500" />
                                 <span className="text-xs font-bold">{player.wins}</span>
                             </div>

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePokerStore } from "@/store/usePokerStore";
-import { Settings, Trash2, Plus } from "lucide-react";
+import { Settings, Trash2, Plus, Pencil, Check } from "lucide-react";
 import { useState } from "react";
 
 export function SettingsDialog() {
@@ -16,8 +16,12 @@ export function SettingsDialog() {
     const tableName = usePokerStore((state) => state.name);
     const gameVariant = usePokerStore((state) => state.gameVariant);
 
+    const updatePlayerName = usePokerStore((state) => state.updatePlayerName);
+
     const [newPlayerName, setNewPlayerName] = useState("");
     const [newPlayerStack, setNewPlayerStack] = useState(1000);
+    const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState("");
 
     const handleAddPlayer = () => {
         if (newPlayerName.trim()) {
@@ -28,6 +32,18 @@ export function SettingsDialog() {
 
             addPlayer(newPlayerName, seat, newPlayerStack);
             setNewPlayerName("");
+        }
+    };
+
+    const startEditing = (player: { id: string, name: string }) => {
+        setEditingPlayerId(player.id);
+        setEditingName(player.name);
+    };
+
+    const handleSaveRename = (playerId: string) => {
+        if (editingName.trim()) {
+            updatePlayerName(playerId, editingName.trim());
+            setEditingPlayerId(null);
         }
     };
 
@@ -86,19 +102,47 @@ export function SettingsDialog() {
                                 <div className="border rounded-lg divide-y">
                                     {players.map((player) => (
                                         <div key={player.id} className="flex items-center justify-between p-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm">
+                                            <div className="flex items-center gap-3 flex-1">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm shrink-0">
                                                     {player.seat}
                                                 </div>
-                                                <div>
-                                                    <div className="font-medium">{player.name}</div>
+                                                <div className="flex-1 min-w-0">
+                                                    {editingPlayerId === player.id ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                value={editingName}
+                                                                onChange={(e) => setEditingName(e.target.value)}
+                                                                className="h-8 text-sm"
+                                                                autoFocus
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === "Enter") handleSaveRename(player.id);
+                                                                    if (e.key === "Escape") setEditingPlayerId(null);
+                                                                }}
+                                                            />
+                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-green-500" onClick={() => handleSaveRename(player.id)}>
+                                                                <Check className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2 group">
+                                                            <div className="font-medium truncate">{player.name}</div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                onClick={() => startEditing(player)}
+                                                            >
+                                                                <Pencil className="w-3 h-3" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                     <div className="text-xs text-muted-foreground">{player.stack}</div>
                                                 </div>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
                                                 onClick={() => removePlayer(player.id)}
                                             >
                                                 <Trash2 className="w-4 h-4" />

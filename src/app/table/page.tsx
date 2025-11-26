@@ -125,7 +125,7 @@ export default function TablePage() {
             {/* Game Area */}
             <main className="flex-1 overflow-y-auto pb-32 pt-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
                 {/* Pot Display */}
-                <div className="p-10 text-center sticky top-0 z-0">
+                <div className="p-10 text-center sticky top-0 z-40">
                     <div id="pot-display" className="relative inline-block group">
                         {/* Enhanced glow effect - stronger and more visible */}
                         <div className="absolute inset-0 bg-gradient-radial from-amber-500/40 dark:from-amber-500/30 to-transparent blur-3xl group-hover:from-amber-500/60 dark:group-hover:from-amber-500/40 transition-all duration-500" />
