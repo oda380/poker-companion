@@ -66,7 +66,7 @@ export function AboutDialog() {
                         <p className="text-xs text-muted-foreground">
                             © {new Date().getFullYear()} Kitaek Lim. All rights reserved.
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">Version 1.5.0</p>
+                        <p className="text-xs text-muted-foreground mt-1">Version 1.7.0</p>
                     </div>
                 </div>
             </DialogContent>

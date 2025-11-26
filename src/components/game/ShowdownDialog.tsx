@@ -9,6 +9,7 @@ import { evaluateWinners } from "@/lib/hand-evaluator";
 import { Trophy, Check, Swords, Eye } from "lucide-react";
 import { Card } from "./Card";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn, getStreetColor } from "@/lib/utils";
 
 interface EvaluationResult {
     winners: Array<{ playerId: string; handDescription: string }>;
@@ -237,10 +238,11 @@ export function ShowdownDialog() {
                                 Showdown Results
                             </>
                         ) : (
-                            <>
-                                <Swords className="w-6 h-6 text-red-500" />
-                                Final Showdown
-                            </>
+                            <div className="flex items-center gap-3">
+                                <div className={cn("px-3 py-1 rounded-full border text-sm font-bold tracking-wider uppercase", getStreetColor("showdown"))}>
+                                    Showdown
+                                </div>
+                            </div>
                         )}
                     </DialogTitle>
                 </DialogHeader>
@@ -371,8 +373,8 @@ export function ShowdownDialog() {
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => setActiveSlot(i)}
                                                         className={`relative cursor-pointer rounded-xl transition-all ${isActive
-                                                                ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
-                                                                : "hover:ring-2 hover:ring-primary/50"
+                                                            ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
+                                                            : "hover:ring-2 hover:ring-primary/50"
                                                             }`}
                                                     >
                                                         {card ? (

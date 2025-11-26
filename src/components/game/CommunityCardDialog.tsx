@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
 import { useState, useEffect } from "react";
 import { Card } from "./Card";
+import { cn, getStreetColor } from "@/lib/utils";
 
 export function CommunityCardDialog() {
     const currentHand = usePokerStore((state) => state.currentHand);
     const [selectedCards, setSelectedCards] = useState<string[]>([]);
     const [isOpen, setIsOpen] = useState(true);
+    const [activeSlot, setActiveSlot] = useState(0);
 
     // Determine if we need to show card input dialog
     const needsCardInput = currentHand?.activePlayerId === "WAITING_FOR_CARDS";
+    const cardsNeeded = currentHand?.currentStreet === "flop" ? 3 : 1;
 
     // Sync isOpen with needsCardInput
     useEffect(() => {
@@ -19,6 +22,14 @@ export function CommunityCardDialog() {
             setIsOpen(true);
         }
     }, [needsCardInput]);
+
+    // Initialize/Reset selectedCards when street changes or dialog opens
+    useEffect(() => {
+        if (needsCardInput) {
+            setSelectedCards(Array(cardsNeeded).fill(""));
+            setActiveSlot(0);
+        }
+    }, [needsCardInput, cardsNeeded]);
 
     if (!currentHand) return null;
     if (!needsCardInput) return null;
@@ -38,17 +49,6 @@ export function CommunityCardDialog() {
             </div>
         );
     }
-
-    const cardsNeeded = currentHand.currentStreet === "flop" ? 3 : 1;
-    const [activeSlot, setActiveSlot] = useState(0);
-
-    // Initialize/Reset selectedCards when street changes or dialog opens
-    useEffect(() => {
-        if (needsCardInput) {
-            setSelectedCards(Array(cardsNeeded).fill(""));
-            setActiveSlot(0);
-        }
-    }, [needsCardInput, cardsNeeded]);
 
     const handleCardSelect = (cardCode: string) => {
         const newCards = [...selectedCards];
@@ -139,7 +139,7 @@ export function CommunityCardDialog() {
                 </DialogHeader>
                 <div className="space-y-6">
                     <div className="text-center space-y-4">
-                        <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold tracking-wider text-sm border border-primary/20">
+                        <div className={cn("inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold tracking-wider text-sm border", getStreetColor(currentHand.currentStreet))}>
                             {streetName} PHASE
                         </div>
                         <div className="flex justify-center gap-4 min-h-[120px] items-center">

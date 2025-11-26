@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { NavBar } from "@/components/nav-bar";
-import { cn } from "@/lib/utils";
+import { cn, getStreetColor, getStreetLabel } from "@/lib/utils";
 
 export default function TablePage() {
     const router = useRouter();
@@ -160,8 +160,8 @@ export default function TablePage() {
                                     <div className="w-1 h-1 rounded-full bg-slate-600" />
                                 </>
                             )}
-                            <div className="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-300 uppercase tracking-wider text-xs">
-                                {currentHand.currentStreet}
+                            <div className={cn("px-3 py-1 rounded-full border uppercase tracking-wider text-xs font-bold", getStreetColor(currentHand.currentStreet))}>
+                                {getStreetLabel(currentHand.currentStreet)}
                             </div>
                         </div>
                     )}
