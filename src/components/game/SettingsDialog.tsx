@@ -124,13 +124,12 @@ export function SettingsDialog() {
                                                             </Button>
                                                         </div>
                                                     ) : (
-                                                        <div className="flex items-center gap-2 group">
+                                                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => startEditing(player)}>
                                                             <div className="font-medium truncate">{player.name}</div>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
-                                                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                onClick={() => startEditing(player)}
+                                                                className="h-6 w-6 opacity-50 group-hover:opacity-100 transition-opacity"
                                                             >
                                                                 <Pencil className="w-3 h-3" />
                                                             </Button>

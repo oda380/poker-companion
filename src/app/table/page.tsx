@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { NavBar } from "@/components/nav-bar";
+import { cn } from "@/lib/utils";
 
 export default function TablePage() {
     const router = useRouter();
@@ -118,6 +119,8 @@ export default function TablePage() {
 
     if (players.length === 0) return null;
 
+    const isDealerSelectionOpen = handHistory.length === 0 && !currentHand && players.length > 0;
+
     return (
         <div key={tableId} className="h-[100dvh] overflow-hidden bg-background flex flex-col">
             <NavBar />
@@ -125,7 +128,8 @@ export default function TablePage() {
             {/* Game Area */}
             <main className="flex-1 overflow-y-auto pb-32 pt-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
                 {/* Pot Display */}
-                <div className="p-10 text-center sticky top-0 z-40">
+                {/* Lower z-index when dealer selection is open to prevent rendering artifacts on mobile */}
+                <div className={cn("p-10 text-center sticky top-0", isDealerSelectionOpen ? "z-0" : "z-40")}>
                     <div id="pot-display" className="relative inline-block group">
                         {/* Enhanced glow effect - stronger and more visible */}
                         <div className="absolute inset-0 bg-gradient-radial from-amber-500/40 dark:from-amber-500/30 to-transparent blur-3xl group-hover:from-amber-500/60 dark:group-hover:from-amber-500/40 transition-all duration-500" />
