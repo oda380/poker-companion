@@ -30,7 +30,10 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
     const { players, config, gameVariant } = table;
     // 1. Determine active players for this hand
     // Players must have chips >= 1 AND not be sitting out
-    const activePlayers = players.filter(p => p.stack >= 1 && !p.isSittingOut);
+    // CRITICAL: Sort by seat to ensure correct turn order and blind assignment
+    const activePlayers = players
+        .filter(p => p.stack >= 1 && !p.isSittingOut)
+        .sort((a, b) => a.seat - b.seat);
 
     if (activePlayers.length < 2) {
         throw new Error("Not enough players to start a hand");
@@ -55,14 +58,16 @@ export function initializeHand(table: TableState, initialDealerSeat?: number): {
             // Fallback if we can't find last dealer
             dealerSeat = activePlayers[0].seat;
         } else {
-            // Find the player who was dealer and move to next
-            const lastDealerIndex = activePlayers.findIndex(p => p.seat === lastDealerSeat);
-            if (lastDealerIndex === -1) {
-                // Last dealer not in game anymore
-                dealerSeat = activePlayers[0].seat;
+            // "Dead Dealer" Logic:
+            // Find the next active player whose seat is strictly greater than the last dealer's seat.
+            // If no such player exists (e.g., last dealer was the highest seat), wrap around to the first active player.
+            const nextDealer = activePlayers.find(p => p.seat > lastDealerSeat);
+
+            if (nextDealer) {
+                dealerSeat = nextDealer.seat;
             } else {
-                const nextIndex = (lastDealerIndex + 1) % activePlayers.length;
-                dealerSeat = activePlayers[nextIndex].seat;
+                // Wrap around to the lowest seat
+                dealerSeat = activePlayers[0].seat;
             }
         }
     }
@@ -323,7 +328,10 @@ export function processAction(table: TableState, actionType: Action["bettingType
     }
 
     // Find next player in rotation
-    const allPlayers = updatedPlayers.filter(p => !p.isSittingOut);
+    // CRITICAL: Sort by seat to ensure correct turn order
+    const allPlayers = updatedPlayers
+        .filter(p => !p.isSittingOut)
+        .sort((a, b) => a.seat - b.seat);
     const currentIndex = allPlayers.findIndex(p => p.id === activePlayerId);
     let nextIndex = (currentIndex + 1) % allPlayers.length;
     let nextPlayer = allPlayers[nextIndex];

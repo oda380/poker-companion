@@ -1,11 +1,14 @@
+"use client";
+
 import { usePokerStore } from "@/store/usePokerStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { evaluateWinners } from "@/lib/hand-evaluator";
-import { Trophy } from "lucide-react";
+import { Trophy, Check, Swords, Eye } from "lucide-react";
 import { Card } from "./Card";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface EvaluationResult {
     winners: Array<{ playerId: string; handDescription: string }>;
@@ -23,7 +26,19 @@ export function ShowdownDialog() {
     // Only show if hand is in showdown phase (no active player)
     const isShowdown = currentHand && currentHand.activePlayerId === "";
 
+    const isShowdownDialogOpen = usePokerStore((state) => state.ui.isShowdownDialogOpen);
+    const setUiState = usePokerStore((state) => state.setUiState);
+
+    // Sync isOpen with isShowdown
+    useEffect(() => {
+        if (isShowdown) {
+            setUiState({ isShowdownDialogOpen: true });
+        }
+    }, [isShowdown, setUiState]);
+
     if (!isShowdown) return null;
+
+    // Floating button removed - Controls.tsx will handle the "Resume" button
 
     const remainingPlayers = players.filter(p =>
         !p.isSittingOut &&
@@ -203,17 +218,43 @@ export function ShowdownDialog() {
             // Otherwise, close dialog (undo)
             usePokerStore.temporal.getState().undo();
         }
+        setUiState({ isShowdownDialogOpen: false }); // Also close the dialog if user clicks outside or presses escape
     };
 
     return (
-        <Dialog open={isShowdown} onOpenChange={handleClose}>
+        <Dialog open={isShowdown && isShowdownDialogOpen} onOpenChange={(open) => !open && setUiState({ isShowdownDialogOpen: false })}>
             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>
-                        {evaluationResult ? "Showdown Results" : "Showdown - Input Player Hands"}
+                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        {evaluationResult ? (
+                            <>
+                                <Trophy className="w-6 h-6 text-amber-500" />
+                                Showdown Results
+                            </>
+                        ) : (
+                            <>
+                                <Swords className="w-6 h-6 text-red-500" />
+                                Final Showdown
+                            </>
+                        )}
                     </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                    {!evaluationResult && !currentInputPlayer && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
+                            <Eye className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                            <div className="text-sm">
+                                <div className="font-bold text-amber-900 dark:text-amber-100">
+                                    {isStud ? "Reveal Hole Cards" : "Reveal Hands"}
+                                </div>
+                                <div className="text-amber-800/80 dark:text-amber-200/80">
+                                    {isStud
+                                        ? "Input the final face-down hole card for each player to determine the winner."
+                                        : "Input the hole cards for each active player."}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="text-center">
                         <div className="text-sm text-muted-foreground">Total Pot</div>
                         <div className="text-4xl font-bold text-primary">{totalPot}</div>
@@ -230,134 +271,216 @@ export function ShowdownDialog() {
 
                     {evaluationResult ? (
                         /* Results Screen */
-                        <div className="space-y-4">
-                            {remainingPlayers.map((player) => {
-                                const isWinner = evaluationResult.winners.some(w => w.playerId === player.id);
-                                const handInfo = evaluationResult.allHands[player.id];
+                        <div className="space-y-6">
+                            <AnimatePresence>
+                                {evaluationResult.winners.map((winner, idx) => {
+                                    const player = players.find(p => p.id === winner.playerId);
+                                    const handInfo = evaluationResult.allHands[winner.playerId];
 
-                                return (
-                                    <div
-                                        key={player.id}
-                                        className={`p-4 rounded-lg border-2 ${isWinner
-                                            ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950'
-                                            : 'border-gray-200 bg-gray-50 dark:bg-gray-900'
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                {isWinner && <Trophy className="w-5 h-5 text-yellow-500" />}
-                                                <span className="font-bold text-lg">{player.name}</span>
+                                    return (
+                                        <motion.div
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.2 }}
+                                            className="p-6 rounded-xl bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/30 relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                                <Trophy className="w-24 h-24" />
                                             </div>
-                                            <span className={`text-sm font-medium ${isWinner ? 'text-yellow-700 dark:text-yellow-400' : 'text-muted-foreground'}`}>
-                                                {handInfo?.handDescription}
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {handInfo?.cards.map((card, i) => (
-                                                <Card key={i} code={card} faceUp={true} size="small" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+
+                                            <div className="relative z-10">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <Trophy className="w-6 h-6 text-amber-500" />
+                                                    <span className="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider text-sm">Winner</span>
+                                                </div>
+
+                                                <div className="text-3xl font-bold mb-1">{player?.name || "Unknown"}</div>
+                                                <div className="text-xl text-muted-foreground mb-4">{winner.handDescription}</div>
+
+                                                <div className="flex gap-2 mb-4">
+                                                    {handInfo?.cards.map((card, i) => (
+                                                        <Card key={i} code={card} faceUp={true} size="medium" />
+                                                    ))}
+                                                </div>
+
+                                                <div className="text-lg font-medium">
+                                                    Wins <span className="text-primary font-bold">{Math.floor(totalPot / evaluationResult.winners.length)}</span> chips
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
 
                             <Button
-                                size="lg"
-                                className="w-full"
+                                className="w-full h-14 text-lg font-bold"
                                 onClick={handleConfirmResults}
                             >
-                                Confirm & Start Next Hand
+                                Start Next Hand
                             </Button>
                         </div>
                     ) : needsInput ? (
                         /* Hand Input Screen */
-                        <>
+                        <AnimatePresence mode="wait">
                             {currentInputPlayer ? (
-                                <div className="space-y-4">
-                                    <div className="text-center">
-                                        <div className="font-bold text-lg">
-                                            {players.find(p => p.id === currentInputPlayer)?.name}'s Hand
+                                <motion.div
+                                    key="input"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="text-center space-y-4">
+                                        <div className="space-y-1">
+                                            <div className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Input Hand For</div>
+                                            <div className="text-3xl font-bold text-primary">
+                                                {players.find(p => p.id === currentInputPlayer)?.name}
+                                            </div>
                                         </div>
-                                        <div className="flex justify-center gap-2 mt-2 h-24 items-center">
+
+                                        <div className="flex justify-center gap-4 mt-4 h-32 items-center">
+                                            {/* Show existing face-up cards for Stud */}
+                                            {isStud && currentHand.playerHands
+                                                .find(ph => ph.playerId === currentInputPlayer)
+                                                ?.cards.filter(c => c.faceUp)
+                                                .map((card, i) => (
+                                                    <motion.div
+                                                        key={`faceup-${i}`}
+                                                        initial={{ scale: 0.8, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        transition={{ delay: i * 0.1 }}
+                                                        className="opacity-90 grayscale-[0.3]"
+                                                    >
+                                                        <Card code={card.code} faceUp={true} size="large" />
+                                                    </motion.div>
+                                                ))
+                                            }
+
+                                            {/* Input Slots for Hole Card(s) */}
                                             {selectedCards.map((card, i) => (
-                                                <Card key={i} code={card} faceUp={true} size="medium" />
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ scale: 0, rotate: -10 }}
+                                                    animate={{ scale: 1, rotate: 0 }}
+                                                >
+                                                    <Card code={card} faceUp={true} size="large" />
+                                                </motion.div>
                                             ))}
                                             {Array.from({ length: (isStud ? 1 : 2) - selectedCards.length }).map((_, i) => (
                                                 <div
                                                     key={`empty-${i}`}
-                                                    className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30"
-                                                />
+                                                    className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center"
+                                                >
+                                                    <span className="text-xs text-muted-foreground font-medium">
+                                                        {isStud ? "Hole Card" : "Select Card"}
+                                                    </span>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
 
-                                    <div className="h-48">
+                                    <div className="h-48 bg-muted/20 rounded-xl p-2">
                                         <CardKeyboard
                                             onCardSelect={handleCardSelect}
                                             usedCards={[
-                                                // Board cards (Hold'em)
                                                 ...currentHand.board,
-                                                // All entered player hands
                                                 ...Object.values(playerHands).flat(),
-                                                // Currently selected cards
                                                 ...selectedCards
                                             ]}
                                         />
                                     </div>
 
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-3">
                                         <Button
                                             variant="outline"
-                                            className="flex-1"
+                                            className="flex-1 h-12 text-lg"
                                             onClick={handleRemoveLast}
                                             disabled={selectedCards.length === 0}
                                         >
                                             Remove Last
                                         </Button>
                                         <Button
-                                            className="flex-1"
+                                            className="flex-1 h-12 text-lg font-bold"
                                             onClick={handleConfirmHand}
                                             disabled={selectedCards.length !== (isStud ? 1 : 2)}
                                         >
                                             Confirm Hand
                                         </Button>
                                     </div>
-                                </div>
+                                </motion.div>
                             ) : (
-                                <div className="space-y-2">
-                                    <div className="text-sm font-medium">Select player to input their hand:</div>
-                                    {remainingPlayers.map((player) => (
-                                        <Button
-                                            key={player.id}
-                                            variant="outline"
-                                            className="w-full h-14 text-lg justify-start"
-                                            onClick={() => handleStartInput(player.id)}
-                                        >
-                                            {player.name}
-                                            {playerHands[player.id] && (
-                                                <span className="ml-2 text-sm text-green-600">✓ Hand entered</span>
-                                            )}
-                                        </Button>
-                                    ))}
-                                </div>
+                                <motion.div
+                                    key="selection"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="space-y-4"
+                                >
+                                    <div className="text-center mb-6">
+                                        <h3 className="text-lg font-semibold">Who's still in?</h3>
+                                        <p className="text-sm text-muted-foreground">Tap a player to enter their hole cards</p>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {remainingPlayers.map((player) => {
+                                            const hasHand = !!playerHands[player.id];
+                                            return (
+                                                <motion.button
+                                                    key={player.id}
+                                                    whileHover={{ scale: 1.02 }}
+                                                    whileTap={{ scale: 0.98 }}
+                                                    onClick={() => handleStartInput(player.id)}
+                                                    className={`relative p-4 rounded-xl border-2 text-left transition-all ${hasHand
+                                                        ? 'bg-green-500/10 border-green-500/50'
+                                                        : 'bg-card hover:bg-accent border-border hover:border-primary/50'
+                                                        }`}
+                                                >
+                                                    <div className="font-bold text-lg truncate">{player.name}</div>
+                                                    <div className={`text-sm mt-1 flex items-center gap-1 ${hasHand ? 'text-green-600 font-medium' : 'text-muted-foreground'
+                                                        }`}>
+                                                        {hasHand ? (
+                                                            <>
+                                                                <Check className="w-4 h-4" />
+                                                                <span>Ready</span>
+                                                            </>
+                                                        ) : (
+                                                            <span>Tap to enter</span>
+                                                        )}
+                                                    </div>
+                                                </motion.button>
+                                            );
+                                        })}
+                                    </div>
+                                </motion.div>
                             )}
-                        </>
+                        </AnimatePresence>
                     ) : (
-                        <div className="space-y-4">
-                            <div className="text-center text-sm text-muted-foreground">
-                                All hands entered. Click below to evaluate and see results.
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="space-y-6 py-8"
+                        >
+                            <div className="text-center space-y-2">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
+                                    <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold">All Set!</h3>
+                                <p className="text-muted-foreground">Hands are entered. Ready to see who won?</p>
                             </div>
+
                             <Button
                                 size="lg"
-                                className="w-full"
+                                className="w-full h-16 text-xl font-bold shadow-lg animate-pulse"
                                 onClick={handleEvaluate}
                             >
                                 Evaluate Hands
                             </Button>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
             </DialogContent>
         </Dialog>
     );
 }
+

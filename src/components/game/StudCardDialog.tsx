@@ -2,21 +2,49 @@ import { usePokerStore } from "@/store/usePokerStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "./Card";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function StudCardDialog() {
     const currentHand = usePokerStore((state) => state.currentHand);
     const players = usePokerStore((state) => state.players);
     const [selectedCard, setSelectedCard] = useState<string>("");
     const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-
-    if (!currentHand || currentHand.gameVariant !== "fiveCardStud") return null;
+    const [isOpen, setIsOpen] = useState(true);
 
     // Only show if waiting for Stud card dealing
-    const needsStudCard = currentHand.activePlayerId === "WAITING_FOR_STUD_CARD";
+    const needsStudCard = currentHand?.activePlayerId === "WAITING_FOR_STUD_CARD";
+    const isStud = currentHand?.gameVariant === "fiveCardStud";
 
+    // Sync isOpen with needsStudCard
+    useEffect(() => {
+        if (needsStudCard) {
+            setIsOpen(true);
+        }
+    }, [needsStudCard]);
+
+    if (!currentHand || !isStud) return null;
     if (!needsStudCard) return null;
+
+    const streetName = currentHand.currentStreet.replace("street", "Street ");
+
+    if (!isOpen) {
+        return (
+            <div className="fixed bottom-24 right-4 z-50">
+                <Button
+                    size="lg"
+                    className="h-14 px-6 shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground animate-in fade-in slide-in-from-bottom-4"
+                    onClick={() => setIsOpen(true)}
+                >
+                    <div className="mr-2 flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-xs font-bold">
+                        {streetName.split(" ")[1]}
+                    </div>
+                    Resume Dealing
+                </Button>
+            </div>
+        );
+    }
 
     const activePlayers = players.filter(p =>
         !p.isSittingOut && p.status !== "folded"
@@ -28,7 +56,6 @@ export function StudCardDialog() {
     const playerHand = currentHand.playerHands.find(h => h.playerId === currentPlayer.id);
     const cardCount = playerHand?.cards.length || 0;
 
-    const streetName = currentHand.currentStreet.replace("street", "Street ");
 
     const handleCardSelect = (cardCode: string) => {
         setSelectedCard(cardCode);
@@ -149,60 +176,93 @@ export function StudCardDialog() {
     };
 
     return (
-        <Dialog open={needsStudCard} onOpenChange={(open) => !open && usePokerStore.temporal.getState().undo()}>
-            <DialogContent className="sm:max-w-md">
+        <Dialog open={needsStudCard && isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
+            <DialogContent className="sm:max-w-md overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Deal {streetName} Card</DialogTitle>
+                    <div className="text-sm text-muted-foreground">
+                        Select a card to deal face-up to the current player.
+                    </div>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="text-center">
-                        <div className="text-sm text-muted-foreground mb-2">
-                            Dealing to: <span className="font-bold">{currentPlayer.name}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            Card {cardCount + 1} of 5 (Face-Up)
-                        </div>
-                    </div>
 
-                    {/* Current player's existing cards */}
-                    {playerHand && playerHand.cards.length > 0 && (
-                        <div className="flex justify-center gap-2 p-3 bg-muted/30 rounded">
-                            {playerHand.cards.map((card, i) => (
-                                <Card key={i} code={card.code} faceUp={card.faceUp} size="small" />
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Selected card preview */}
-                    <div className="flex justify-center">
-                        {selectedCard ? (
-                            <Card code={selectedCard} faceUp={true} size="medium" />
-                        ) : (
-                            <div className="w-14 h-20 bg-muted rounded border-2 border-dashed border-muted-foreground/30" />
-                        )}
-                    </div>
-
-                    <div className="h-56">
-                        <CardKeyboard
-                            onCardSelect={handleCardSelect}
-                            usedCards={[
-                                // All cards from all player hands
-                                ...currentHand.playerHands.flatMap(ph => ph.cards.map(c => c.code)),
-                                // Currently selected card (if any)
-                                ...(selectedCard ? [selectedCard] : [])
-                            ]}
-                        />
-                    </div>
-
-                    <Button
-                        size="lg"
-                        className="w-full"
-                        onClick={handleConfirm}
-                        disabled={!selectedCard}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentPlayer.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-6"
                     >
-                        Confirm Card
-                    </Button>
-                </div>
+                        <div className="text-center space-y-4">
+                            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold tracking-wider text-sm border border-primary/20 uppercase">
+                                {streetName}
+                            </div>
+
+                            <div className="space-y-1">
+                                <div className="text-sm text-muted-foreground uppercase tracking-wider font-bold">Dealing to</div>
+                                <div className="text-4xl font-bold text-primary">{currentPlayer.name}</div>
+                            </div>
+
+                            <div className="text-xs text-muted-foreground font-medium bg-muted inline-block px-3 py-1 rounded-full">
+                                Card {cardCount + 1} of 5 (Face-Up)
+                            </div>
+                        </div>
+
+                        {/* Current player's existing cards */}
+                        {playerHand && playerHand.cards.length > 0 && (
+                            <div className="flex justify-center gap-2 p-3 bg-muted/30 rounded-xl overflow-x-auto">
+                                {playerHand.cards.map((card, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: i * 0.1 }}
+                                    >
+                                        <Card code={card.code} faceUp={card.faceUp} size="small" />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Selected card preview */}
+                        <div className="flex justify-center h-32 items-center">
+                            {selectedCard ? (
+                                <motion.div
+                                    initial={{ scale: 0, rotate: -10 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                >
+                                    <Card code={selectedCard} faceUp={true} size="large" />
+                                </motion.div>
+                            ) : (
+                                <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center animate-pulse">
+                                    <span className="text-xs text-muted-foreground font-medium">Select Card</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="h-48 bg-muted/20 rounded-xl p-2">
+                            <CardKeyboard
+                                onCardSelect={handleCardSelect}
+                                usedCards={[
+                                    // All cards from all player hands
+                                    ...currentHand.playerHands.flatMap(ph => ph.cards.map(c => c.code)),
+                                    // Currently selected card (if any)
+                                    ...(selectedCard ? [selectedCard] : [])
+                                ]}
+                            />
+                        </div>
+
+                        <Button
+                            size="lg"
+                            className="w-full h-14 text-lg font-bold shadow-md"
+                            onClick={handleConfirm}
+                            disabled={!selectedCard}
+                        >
+                            Confirm Card
+                        </Button>
+                    </motion.div>
+                </AnimatePresence>
             </DialogContent>
         </Dialog>
     );

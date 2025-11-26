@@ -6,23 +6,93 @@ import { Slider } from "@/components/ui/slider";
 import { Numpad } from "./Numpad";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Swords } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Controls() {
     const currentHand = usePokerStore((state) => state.currentHand);
     const playerAction = usePokerStore((state) => state.playerAction);
+    const setUiState = usePokerStore((state) => state.setUiState);
     const [betAmount, setBetAmount] = useState(0);
     const [inputMode, setInputMode] = useState<"slider" | "numpad">("slider");
     const [sheetOpen, setSheetOpen] = useState(false);
 
+    // Always call hooks at the top level
+    const activePlayerId = currentHand?.activePlayerId;
+    const activePlayer = usePokerStore(state => state.players.find(p => p.id === activePlayerId));
+
     if (!currentHand) return null;
 
-    const { currentBet, minRaise } = currentHand;
-    // Logic to determine valid actions based on current state would go here
-    // For MVP, we show all relevant buttons
+    // Showdown Mode
+    if (currentHand.activePlayerId === "") {
+        return (
+            <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border flex justify-center shadow-2xl pb-8">
+                <Button
+                    size="lg"
+                    className="h-16 px-8 text-xl font-bold bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white shadow-lg animate-in fade-in slide-in-from-bottom-4"
+                    onClick={() => setUiState({ isShowdownDialogOpen: true })}
+                >
+                    <Swords className="w-6 h-6 mr-2" />
+                    Showdown
+                </Button>
+            </div>
+        );
+    }
 
-    const activePlayerId = currentHand.activePlayerId;
-    const activePlayer = usePokerStore(state => state.players.find(p => p.id === activePlayerId));
+    const { currentBet, minRaise } = currentHand;
     const playerStack = activePlayer?.stack || 0;
+
+    // Check if "Check" should be "Showdown"
+    const isFinalStreet =
+        (currentHand.gameVariant === "texasHoldem" && currentHand.currentStreet === "river") ||
+        (currentHand.gameVariant === "fiveCardStud" && currentHand.currentStreet === "street5");
+
+    // Determine if player is closing the action
+    // Simple heuristic: If it's final street, check is allowed (currentBet == 0), 
+    // and we are the last active player in the rotation?
+    // Actually, if currentBet is 0, and we check, we are just passing. 
+    // But if everyone else has checked, then it's showdown.
+    // We can check if all other active players have committed 0 this round?
+    // Yes, if currentBet is 0, everyone has committed 0 (relative to this round's start, 
+    // but perPlayerCommitted tracks total for the street).
+    // So if currentBet is 0, everyone has checked so far.
+    // If I am the last one, then my check ends the round.
+
+    // How to know if I am the last one?
+    // Get all active players sorted by seat.
+    // Find dealer.
+    // The order is (dealer+1)...(dealer).
+    // So the last player is the dealer (or closest active to dealer's right).
+
+    const activePlayers = usePokerStore.getState().players
+        .filter(p => !p.isSittingOut && p.status === "active")
+        .sort((a, b) => a.seat - b.seat);
+
+    const dealerSeat = currentHand.dealerSeat;
+
+    // Find the player who acts last (closest to dealer's seat, going backwards from dealer)
+    // Actually, simpler: Rotate the array so dealer is last.
+    // But we need to handle the case where dealer is folded.
+    // The standard rotation starts at dealer+1.
+    // So the last person to act is the one immediately before dealer+1 in the cycle.
+    // Which is... the dealer (or whoever is at that position).
+
+    // Let's rotate activePlayers so the first person to act is at index 0.
+    // First person to act is the first active player after dealerSeat.
+    const firstActorIndex = activePlayers.findIndex(p => p.seat > dealerSeat);
+    // If no one after dealer, then index 0 (wrap around).
+    const rotationIndex = firstActorIndex === -1 ? 0 : firstActorIndex;
+
+    // Rotated array: [FirstActor, ..., LastActor]
+    const rotatedPlayers = [
+        ...activePlayers.slice(rotationIndex),
+        ...activePlayers.slice(0, rotationIndex)
+    ];
+
+    const lastActor = rotatedPlayers[rotatedPlayers.length - 1];
+    const isLastToAct = lastActor?.id === activePlayerId;
+
+    const showShowdownButton = isFinalStreet && currentBet === 0 && isLastToAct;
 
     const handleBet = (amount: number) => {
         // Determine if it's a bet or raise based on currentBet
@@ -51,7 +121,12 @@ export function Controls() {
             <Button
                 variant="secondary"
                 size="lg"
-                className="h-16 text-xl font-bold bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 shadow-lg shadow-blue-500/30 active:scale-95 transition-transform"
+                className={cn(
+                    "h-16 text-xl font-bold border-0 shadow-lg active:scale-95 transition-transform text-white",
+                    showShowdownButton
+                        ? "bg-gradient-to-br from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 shadow-amber-500/30"
+                        : "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30"
+                )}
                 onClick={() => {
                     const activeId = currentHand.activePlayerId || "";
                     const playerCommitted = currentHand.perPlayerCommitted[activeId] || 0;
@@ -67,7 +142,12 @@ export function Controls() {
                     playerAction("check");
                 }}
             >
-                Check
+                {showShowdownButton ? (
+                    <div className="flex items-center gap-2">
+                        <Swords className="w-5 h-5" />
+                        Showdown
+                    </div>
+                ) : "Check"}
             </Button>
 
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

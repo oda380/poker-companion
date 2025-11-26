@@ -27,6 +27,7 @@ interface PokerStore extends TableState {
     ui: {
         isSettingsOpen: boolean;
         isHandHistoryOpen: boolean;
+        isShowdownDialogOpen: boolean;
         activeModal: string | null;
     };
     setUiState: (partialUi: Partial<PokerStore["ui"]>) => void;
@@ -56,6 +57,7 @@ export const usePokerStore = create<PokerStore>()(
                 ui: {
                     isSettingsOpen: false,
                     isHandHistoryOpen: false,
+                    isShowdownDialogOpen: true, // Default to true so it opens when state changes
                     activeModal: null,
                 },
 
@@ -167,6 +169,7 @@ export const usePokerStore = create<PokerStore>()(
                         ui: {
                             isSettingsOpen: false,
                             isHandHistoryOpen: false,
+                            isShowdownDialogOpen: true,
                             activeModal: null,
                         }
                     };

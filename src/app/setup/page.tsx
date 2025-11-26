@@ -29,6 +29,7 @@ export default function SetupPage() {
             ui: {
                 isSettingsOpen: false,
                 isHandHistoryOpen: false,
+                isShowdownDialogOpen: true,
                 activeModal: null
             }
         }));

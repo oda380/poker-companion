@@ -2,22 +2,44 @@ import { usePokerStore } from "@/store/usePokerStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "./Card";
 
 export function CommunityCardDialog() {
     const currentHand = usePokerStore((state) => state.currentHand);
     const [selectedCards, setSelectedCards] = useState<string[]>([]);
-
-    if (!currentHand) return null;
+    const [isOpen, setIsOpen] = useState(true);
 
     // Determine if we need to show card input dialog
-    const needsCardInput = currentHand.activePlayerId === "WAITING_FOR_CARDS";
+    const needsCardInput = currentHand?.activePlayerId === "WAITING_FOR_CARDS";
 
+    // Sync isOpen with needsCardInput
+    useEffect(() => {
+        if (needsCardInput) {
+            setIsOpen(true);
+        }
+    }, [needsCardInput]);
+
+    if (!currentHand) return null;
     if (!needsCardInput) return null;
 
-    const cardsNeeded = currentHand.currentStreet === "flop" ? 3 : 1;
     const streetName = currentHand.currentStreet.toUpperCase();
+
+    if (!isOpen) {
+        return (
+            <div className="fixed bottom-24 right-4 z-50">
+                <Button
+                    size="lg"
+                    className="h-14 px-6 shadow-xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground animate-in fade-in slide-in-from-bottom-4"
+                    onClick={() => setIsOpen(true)}
+                >
+                    Resume {streetName}
+                </Button>
+            </div>
+        );
+    }
+
+    const cardsNeeded = currentHand.currentStreet === "flop" ? 3 : 1;
 
     const handleCardSelect = (cardCode: string) => {
         if (selectedCards.length < cardsNeeded) {
@@ -98,18 +120,21 @@ export function CommunityCardDialog() {
     };
 
     return (
-        <Dialog open={needsCardInput} onOpenChange={(open) => !open && usePokerStore.temporal.getState().undo()}>
+        <Dialog open={needsCardInput && isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Deal {streetName} Cards</DialogTitle>
+                    <div className="text-sm text-muted-foreground">
+                        {currentHand.currentStreet === "flop"
+                            ? "Burn 1 card, then deal 3 cards to the board"
+                            : "Burn 1 card, then deal 1 card to the board"
+                        }
+                    </div>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="text-center">
-                        <div className="text-sm text-muted-foreground mb-2">
-                            {currentHand.currentStreet === "flop"
-                                ? "Burn 1 card, then deal 3 cards to the board"
-                                : "Burn 1 card, then deal 1 card to the board"
-                            }
+                <div className="space-y-6">
+                    <div className="text-center space-y-4">
+                        <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold tracking-wider text-sm border border-primary/20">
+                            {streetName} PHASE
                         </div>
                         <div className="flex justify-center gap-2 min-h-[100px] items-center">
                             {selectedCards.map((card, i) => (
