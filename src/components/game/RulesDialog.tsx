@@ -32,9 +32,10 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
                 </DialogHeader>
 
                 <Tabs defaultValue="holdem" className="w-full h-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
                         <TabsTrigger value="holdem">Texas Hold'em</TabsTrigger>
                         <TabsTrigger value="stud">5-Card Stud</TabsTrigger>
+                        <TabsTrigger value="usage">How to Use</TabsTrigger>
                     </TabsList>
 
                     <ScrollArea className="h-[50vh] pr-4">
@@ -104,6 +105,32 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
                                         </li>
                                         <li>
                                             <strong className="text-foreground">Showdown:</strong> Players reveal their hole card. The best 5-card hand wins.
+                                        </li>
+                                    </ul>
+                                </section>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="usage" className="space-y-4">
+                            <div className="space-y-4 text-sm text-muted-foreground">
+                                <section>
+                                    <h3 className="text-lg font-semibold text-foreground mb-2">Poker Companion App</h3>
+                                    <p>
+                                        This app is designed to be a digital assistant for your physical home games. It handles the math and organization so you can focus on the fun.
+                                    </p>
+                                </section>
+
+                                <section>
+                                    <h3 className="text-lg font-semibold text-foreground mb-2">How it Helps</h3>
+                                    <ul className="list-disc pl-5 space-y-2">
+                                        <li>
+                                            <strong className="text-foreground">Organize the Game:</strong> The app tracks whose turn it is, who the dealer is, and the current blind levels. No more "whose turn is it?" confusion.
+                                        </li>
+                                        <li>
+                                            <strong className="text-foreground">Handle the Math:</strong> Bet sizes, pot totals, and side pots are calculated automatically. You don't need to count physical chips for every bet.
+                                        </li>
+                                        <li>
+                                            <strong className="text-foreground">Resolve Hands:</strong> At the end of a hand (Showdown), just select the winning player(s). The app distributes the pot correctly, even for complex split pots.
                                         </li>
                                     </ul>
                                 </section>

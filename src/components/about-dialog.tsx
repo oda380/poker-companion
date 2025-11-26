@@ -29,6 +29,18 @@ export function AboutDialog() {
                     </div>
 
                     <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">How to Use</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            This app acts as your digital dealer for offline games, perfect for beginners:
+                        </p>
+                        <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside mt-2">
+                            <li><strong>Organize:</strong> Track turns, blinds, and dealer button automatically.</li>
+                            <li><strong>Calculate:</strong> Let the app handle pot math, bets, and side pots.</li>
+                            <li><strong>Resolve:</strong> Easily determine winners and distribute chips at showdown.</li>
+                        </ul>
+                    </div>
+
+                    <div className="space-y-2">
                         <h3 className="font-semibold text-lg">Key Features</h3>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Support for Texas Hold'em and 5-Card Stud</li>
