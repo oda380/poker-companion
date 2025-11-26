@@ -24,7 +24,7 @@ export function AboutDialog() {
                         <p className="text-sm text-muted-foreground leading-relaxed">
                             A modern, local-first poker table companion app designed for home games.
                             Track players, manage blinds, and keep a detailed history of every hand—all without requiring
-                            an internet connection or server.
+                            a centralized server.
                         </p>
                     </div>
 
