@@ -9,20 +9,20 @@ const nextConfig: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob:",
-              "font-src 'self' data:",
-              "connect-src 'self'",
-              "frame-ancestors 'none'",
+              "default-src 'self' https:",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https:",
+              "style-src 'self' 'unsafe-inline' https:",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https:",
+              "connect-src 'self' https:",
+              // "frame-ancestors 'none'", // Temporarily disabled to rule out framing issues
               "base-uri 'self'",
               "form-action 'self'",
             ].join("; "),
           },
           {
             key: "X-Frame-Options",
-            value: "DENY",
+            value: "SAMEORIGIN", // Changed from DENY to allow same-origin framing if needed
           },
           {
             key: "X-Content-Type-Options",

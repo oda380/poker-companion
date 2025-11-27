@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+/* @import "tw-animate-css"; */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -95,13 +95,13 @@
   --primary-foreground: oklch(0.12 0.03 260);
 
   /* Subtle Secondary */
-  --secondary: oklch(0.20 0.04 260);
+  --secondary: oklch(0.2 0.04 260);
   --secondary-foreground: oklch(0.98 0.01 260);
 
-  --muted: oklch(0.20 0.04 260);
-  --muted-foreground: oklch(0.70 0.04 260);
+  --muted: oklch(0.2 0.04 260);
+  --muted-foreground: oklch(0.7 0.04 260);
 
-  --accent: oklch(0.20 0.04 260);
+  --accent: oklch(0.2 0.04 260);
   --accent-foreground: oklch(0.98 0.01 260);
 
   --destructive: oklch(0.65 0.22 25);
@@ -121,7 +121,7 @@
   --sidebar-foreground: oklch(0.98 0.01 260);
   --sidebar-primary: oklch(0.65 0.18 150);
   --sidebar-primary-foreground: oklch(0.12 0.03 260);
-  --sidebar-accent: oklch(0.20 0.04 260);
+  --sidebar-accent: oklch(0.2 0.04 260);
   --sidebar-accent-foreground: oklch(0.98 0.01 260);
   --sidebar-border: oklch(0.98 0.01 260 / 0.1);
   --sidebar-ring: oklch(0.65 0.18 150);
@@ -133,6 +133,7 @@
   }
 
   body {
+    background-color: white; /* Fallback for older browsers */
     @apply bg-background text-foreground;
   }
 }
