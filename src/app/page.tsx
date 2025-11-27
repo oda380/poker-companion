@@ -59,13 +59,24 @@ export default function Home() {
           <RulesDialog />
 
           <Button
+            variant="secondary"
+            size="lg"
+            className="w-full text-lg h-16 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+            onClick={() => router.push("/history")}
+          >
+            Game History
+          </Button>
+
+          <Button
             variant="outline"
             size="lg"
             className="w-full text-lg h-16 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm transition-all"
             disabled
           >
             Resume Session
-            <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Soon</span>
+            <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+              Soon
+            </span>
           </Button>
         </div>
 
