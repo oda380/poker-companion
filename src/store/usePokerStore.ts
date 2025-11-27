@@ -58,7 +58,7 @@ const initialState: TableState = {
 export const usePokerStore = create<PokerStore>()(
   persist(
     temporal(
-      (set, get) => ({
+      (set) => ({
         ...initialState,
 
         ui: {
@@ -249,6 +249,7 @@ export const usePokerStore = create<PokerStore>()(
       {
         limit: 50,
         partialize: (state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { ui, ...logicState } = state;
           return logicState;
         },
@@ -258,6 +259,7 @@ export const usePokerStore = create<PokerStore>()(
       name: "poker-storage",
       partialize: (state) => {
         // Exclude UI state from persistence
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { ui, ...logicState } = state;
         return logicState;
       },
