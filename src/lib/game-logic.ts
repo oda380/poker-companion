@@ -310,10 +310,6 @@ export function processAction(
     newStatus = "allIn";
   }
 
-  const getEligibleForPot = (players: Player[]): Player[] => {
-    return players.filter(isPlayerInHand);
-  };
-
   const updatedPlayers = table.players.map((p) => {
     if (p.id !== activePlayerId) return p;
     return { ...p, stack: p.stack - betAmount, status: newStatus };
@@ -346,7 +342,6 @@ export function processAction(
   if (playersInHand.length <= 1) {
     const winner = playersInHand[0];
     if (winner) {
-      // IMPORTANT: use UPDATED players for fold status
       const playersInThisHand = updatedPlayers.filter((p) =>
         hand.playerHands.some((ph) => ph.playerId === p.id)
       );
@@ -361,17 +356,13 @@ export function processAction(
 
       const shares: Record<string, number> = {};
 
-      // Winner takes all pots where eligible (will usually be all of them in fold-win)
       for (const pot of pots) {
         if (pot.eligiblePlayerIds.includes(winner.id)) {
           shares[winner.id] = (shares[winner.id] || 0) + pot.amount;
         }
       }
 
-      // Refunds (uncalled bet / all-in overbet / guardrails)
-      for (const [playerId, refundAmount] of Object.entries(
-        refunds as Record<string, number>
-      )) {
+      for (const [playerId, refundAmount] of Object.entries(refunds)) {
         shares[playerId] = (shares[playerId] || 0) + refundAmount;
       }
 
@@ -385,7 +376,6 @@ export function processAction(
         }, {})
       );
 
-      // ✅ Dev-only invariant
       if (process.env.NODE_ENV !== "production") {
         const sharesTotal = sum(shares);
         if (sharesTotal !== committedTotal) {
@@ -421,11 +411,11 @@ export function processAction(
             winners: [
               {
                 playerId: winner.id,
-                potShare: shares[winner.id] || 0, // ✅ do NOT use committedTotal
+                potShare: shares[winner.id] || 0,
                 handDescription: "Won by fold",
               },
             ],
-            totalPot: committedTotal, // ✅ the true total money in the hand
+            totalPot: committedTotal,
             createdAt: new Date().toISOString(),
           },
         ],
@@ -435,7 +425,6 @@ export function processAction(
 
   // --- Next player selection ---
   const isActionable = (p: Player) => !p.isSittingOut && p.status === "active";
-
   const allPlayersSorted = [...updatedPlayers].sort((a, b) => a.seat - b.seat);
 
   const currentIndex = allPlayersSorted.findIndex(
@@ -452,13 +441,8 @@ export function processAction(
     }
   }
 
-  // If nobody is actionable, we’ll rely on roundComplete logic below.
-  // But we need a fallback for nextPlayer to avoid undefined errors if used later
-  if (!nextPlayer) {
-    // Fallback to current player if no one else can act (e.g. everyone else all-in)
-    // The round completion logic should catch this anyway.
-    nextPlayer = allPlayersSorted[currentIndex];
-  }
+  // If nobody is actionable, we'll roll the street forward (all-in / no-actions scenario).
+  const newActivePlayerId = nextPlayer?.id ?? activePlayerId;
 
   const activePlayersInRound = updatedPlayers.filter(
     (p) => !p.isSittingOut && p.status === "active"
@@ -476,15 +460,11 @@ export function processAction(
     actedPlayerIds.has(p.id)
   );
 
-  let roundComplete =
-    activePlayersInRound.length === 0 || (allCommitmentsEqual && allHaveActed);
-
-  if (!roundComplete && !nextPlayer) {
-    console.warn("Stuck in player loop - forcing round completion");
-    roundComplete = true;
-  }
-
-  const newActivePlayerId = nextPlayer.id;
+  // ✅ Complete round when: nobody can act OR (everyone matched bet and acted)
+  const roundComplete =
+    activePlayersInRound.length === 0 ||
+    !nextPlayer ||
+    (allCommitmentsEqual && allHaveActed);
 
   // --- Street end / showdown transition ---
   if (roundComplete) {
@@ -498,16 +478,18 @@ export function processAction(
     const eligiblePlayersForPot = getEligibleForPot(updatedPlayers);
 
     let newPots = [...hand.pots];
-    if (newPots.length === 0) {
-      newPots = [
-        {
-          id: generateId(),
-          amount: roundPot,
-          eligiblePlayerIds: eligiblePlayersForPot.map((p) => p.id),
-        },
-      ];
-    } else {
-      newPots[0] = { ...newPots[0], amount: newPots[0].amount + roundPot };
+    if (roundPot > 0) {
+      if (newPots.length === 0) {
+        newPots = [
+          {
+            id: generateId(),
+            amount: roundPot,
+            eligiblePlayerIds: eligiblePlayersForPot.map((p) => p.id),
+          },
+        ];
+      } else {
+        newPots[0] = { ...newPots[0], amount: newPots[0].amount + roundPot };
+      }
     }
 
     if (nextStreet === "showdown") {
