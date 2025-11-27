@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SettingsDialog } from "@/components/game/SettingsDialog";
 import { AboutDialog } from "@/components/about-dialog";
-import { Home, History, LogOut } from "lucide-react";
+import { RulesDialog } from "@/components/game/RulesDialog";
+import { Home, History, LogOut, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,8 @@ export function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const isTablePage = pathname === "/table";
+  const isSetupPage = pathname === "/setup";
+
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
 
@@ -73,15 +76,19 @@ export function NavBar() {
             )}
 
             {/* Mobile History Button */}
-            {!isTablePage && (
-              <Link
-                href="/history"
-                className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary/10 text-secondary-foreground text-xs font-medium hover:bg-secondary/20 transition-colors"
-              >
-                <History className="w-3 h-3" />
-                History
-              </Link>
-            )}
+            <Link
+              href={isTablePage ? "#" : "/history"}
+              onClick={(e) => {
+                if (isTablePage) {
+                  e.preventDefault();
+                  handleNavigation("/history");
+                }
+              }}
+              className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary/10 text-secondary-foreground text-xs font-medium hover:bg-secondary/20 transition-colors"
+            >
+              <History className="w-3 h-3" />
+              History
+            </Link>
 
             <div className="hidden md:flex items-center gap-1">
               {isTablePage ? (
@@ -123,10 +130,20 @@ export function NavBar() {
               </Link>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             {isTablePage && <SettingsDialog />}
-            <AboutDialog />
+            {isTablePage || isSetupPage ? (
+              <RulesDialog
+                trigger={
+                  <Button variant="ghost" size="icon">
+                    <Info className="h-[1.2rem] w-[1.2rem]" />
+                    <span className="sr-only">Game Rules</span>
+                  </Button>
+                }
+              />
+            ) : (
+              <AboutDialog />
+            )}
             <ThemeToggle />
           </div>
         </div>
