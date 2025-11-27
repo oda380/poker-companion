@@ -10,6 +10,7 @@ import { APP_VERSION, GAME_VARIANTS } from "@/lib/constants";
 import { useEffect, useState } from "react";
 import { getSavedGameMetadata, loadCurrentGame } from "@/lib/game-persistence";
 import { usePokerStore } from "@/store/usePokerStore";
+import { BookOpen, History } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function Home() {
@@ -43,8 +44,16 @@ export default function Home() {
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-background pointer-events-none" />
 
-      {/* Info icon and Theme Toggle in top-right */}
+      {/* Info icon, History icon, and Theme Toggle in top-right */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full hover:bg-white/10"
+          onClick={() => router.push("/history")}
+        >
+          <History className="w-5 h-5" />
+        </Button>
         <AboutDialog />
         <ThemeToggle />
       </div>
@@ -84,22 +93,11 @@ export default function Home() {
             Start New Table
           </Button>
 
-          <RulesDialog />
-
-          <Button
-            variant="secondary"
-            size="lg"
-            className="w-full text-lg h-14 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
-            onClick={() => router.push("/history")}
-          >
-            Game History
-          </Button>
-
           {hasSavedGame && (
             <Button
               variant="outline"
               size="lg"
-              className="w-full text-lg h-14 rounded-xl border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm transition-all"
+              className="w-full text-lg h-16 rounded-xl border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm transition-all"
               onClick={handleResumeGame}
             >
               Resume Game
@@ -108,6 +106,19 @@ export default function Home() {
               </span>
             </Button>
           )}
+
+          <RulesDialog
+            trigger={
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full text-lg h-16 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm transition-all"
+              >
+                <BookOpen className="mr-2 h-5 w-5" />
+                How to Play
+              </Button>
+            }
+          />
         </div>
 
         <div className="mt-12 text-center">

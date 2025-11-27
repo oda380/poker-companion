@@ -39,6 +39,7 @@ import {
   clearAllData,
 } from "@/lib/data-export";
 import { toast } from "sonner";
+import { usePWAInstall } from "@/hooks/use-pwa-install";
 
 export function SettingsDialog() {
   const players = usePokerStore((state) => state.players);
@@ -440,7 +441,8 @@ export function SettingsDialog() {
                   home games.
                 </p>
 
-                <div className="flex gap-2 pt-4">
+                <div className="flex gap-2 pt-4 flex-wrap justify-center">
+                  <InstallButton />
                   <Button variant="outline" size="sm" className="gap-2" asChild>
                     <a
                       href={DEVELOPER_INFO.GITHUB_URL}
@@ -484,4 +486,57 @@ export function SettingsDialog() {
       </DialogContent>
     </Dialog>
   );
+}
+
+function InstallButton() {
+  const { isInstallable, isIOS, install } = usePWAInstall();
+
+  if (isInstallable) {
+    return (
+      <Button
+        onClick={install}
+        size="sm"
+        className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+      >
+        <Download className="w-4 h-4" />
+        Add to Home Screen
+      </Button>
+    );
+  }
+
+  if (isIOS) {
+    return (
+      <Button
+        onClick={() => {
+          toast.info("Install on iOS", {
+            description: (
+              <div className="space-y-2">
+                <p>To install this app on your iPhone/iPad:</p>
+                <ol className="list-decimal list-inside space-y-1 text-sm">
+                  <li>
+                    Tap the Share button{" "}
+                    <span className="inline-block px-1 bg-muted rounded">
+                      ⎋
+                    </span>
+                  </li>
+                  <li>
+                    Scroll down and tap <strong>Add to Home Screen</strong>
+                  </li>
+                </ol>
+              </div>
+            ),
+            duration: 8000,
+          });
+        }}
+        size="sm"
+        variant="outline"
+        className="gap-2"
+      >
+        <Download className="w-4 h-4" />
+        Add to Home Screen
+      </Button>
+    );
+  }
+
+  return null;
 }
