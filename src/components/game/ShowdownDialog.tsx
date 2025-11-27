@@ -414,61 +414,67 @@ export function ShowdownDialog() {
                       </div>
                     </div>
 
-                    <div className="flex justify-center gap-4 mt-4 h-32 items-center">
-                      {/* Show existing face-up cards for Stud */}
-                      {isStud &&
-                        currentHand.playerHands
-                          .find((ph) => ph.playerId === currentInputPlayer)
-                          ?.cards.filter((c) => c.faceUp)
-                          .map((card, i) => (
-                            <motion.div
-                              key={`faceup-${i}`}
-                              className="opacity-90 grayscale-[0.3]"
-                            >
-                              <Card
-                                code={card.code}
-                                faceUp={true}
-                                size="large"
-                              />
-                            </motion.div>
-                          ))}
+                    {/* Card Display Area - Responsive Layout */}
+                    <div className="flex flex-col md:flex-row justify-center gap-4 mt-4 items-center">
+                      {/* Face-up cards for Stud - Always in a row */}
+                      {isStud && (
+                        <div className="flex gap-3 justify-center">
+                          {currentHand.playerHands
+                            .find((ph) => ph.playerId === currentInputPlayer)
+                            ?.cards.filter((c) => c.faceUp)
+                            .map((card, i) => (
+                              <motion.div
+                                key={`faceup-${i}`}
+                                className="opacity-90 grayscale-[0.3]"
+                              >
+                                <Card
+                                  code={card.code}
+                                  faceUp={true}
+                                  size="large"
+                                />
+                              </motion.div>
+                            ))}
+                        </div>
+                      )}
 
                       {/* Input Slots for Hole Card(s) */}
-                      {Array.from({ length: isStud ? 1 : 2 }).map((_, i) => {
-                        const card = selectedCards[i];
-                        const isActive = i === activeSlot;
+                      <div className="flex gap-4 justify-center min-h-[120px] items-center">
+                        {Array.from({ length: isStud ? 1 : 2 }).map((_, i) => {
+                          const card = selectedCards[i];
+                          const isActive = i === activeSlot;
 
-                        return (
-                          <motion.div
-                            key={i}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setActiveSlot(i)}
-                            className={`relative cursor-pointer rounded-xl transition-all ${
-                              isActive
-                                ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
-                                : "hover:ring-2 hover:ring-primary/50"
-                            }`}
-                          >
-                            {card ? (
-                              <Card code={card} faceUp={true} size="large" />
-                            ) : (
-                              <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground font-medium">
-                                  {isStud ? "Hole Card" : `Card ${i + 1}`}
-                                </span>
-                              </div>
-                            )}
+                          return (
+                            <motion.div
+                              key={i}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setActiveSlot(i)}
+                              className={`relative cursor-pointer rounded-xl transition-all ${
+                                isActive
+                                  ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
+                                  : "hover:ring-2 hover:ring-primary/50"
+                              }`}
+                            >
+                              {card ? (
+                                <Card code={card} faceUp={true} size="large" />
+                              ) : (
+                                <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground font-medium">
+                                    {isStud ? "Hole Card" : `Card ${i + 1}`}
+                                  </span>
+                                </div>
+                              )}
 
-                            {/* Active Indicator */}
-                            {isActive && (
-                              <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
-                                EDITING
-                              </div>
-                            )}
-                          </motion.div>
-                        );
-                      })}
+                              {/* Active Indicator */}
+                              {isActive && (
+                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
+                                  EDITING
+                                </div>
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
