@@ -7,9 +7,36 @@ import { RulesDialog } from "@/components/game/RulesDialog";
 import { AboutDialog } from "@/components/about-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { APP_VERSION, GAME_VARIANTS } from "@/lib/constants";
+import { useEffect, useState } from "react";
+import { getSavedGameMetadata, loadCurrentGame } from "@/lib/game-persistence";
+import { usePokerStore } from "@/store/usePokerStore";
+import { formatDistanceToNow } from "date-fns";
 
 export default function Home() {
   const router = useRouter();
+  const [hasSavedGame, setHasSavedGame] = useState(false);
+  const [savedGameAge, setSavedGameAge] = useState<string>("");
+  const restoreState = usePokerStore((state) => state.restoreState);
+
+  useEffect(() => {
+    // Check for saved game on mount
+    getSavedGameMetadata().then((metadata) => {
+      if (metadata) {
+        setHasSavedGame(true);
+        setSavedGameAge(
+          formatDistanceToNow(metadata.timestamp, { addSuffix: true })
+        );
+      }
+    });
+  }, []);
+
+  const handleResumeGame = async () => {
+    const savedState = await loadCurrentGame();
+    if (savedState) {
+      restoreState(savedState);
+      router.push("/table");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
@@ -68,17 +95,19 @@ export default function Home() {
             Game History
           </Button>
 
-          <Button
-            variant="outline"
-            size="lg"
-            className="w-full text-lg h-14 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm transition-all"
-            disabled
-          >
-            Resume Session
-            <span className="ml-2 text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
-              Soon
-            </span>
-          </Button>
+          {hasSavedGame && (
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full text-lg h-14 rounded-xl border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 backdrop-blur-sm transition-all"
+              onClick={handleResumeGame}
+            >
+              Resume Game
+              <span className="ml-2 text-xs text-muted-foreground">
+                {savedGameAge}
+              </span>
+            </Button>
+          )}
         </div>
 
         <div className="mt-12 text-center">

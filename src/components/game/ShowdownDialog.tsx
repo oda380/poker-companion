@@ -111,16 +111,12 @@ export function ShowdownDialog() {
 
   const handleStartInput = (playerId: string) => {
     setCurrentInputPlayer(playerId);
-    const maxCards = isStud ? 1 : 2;
-
-    // Pre-fill with existing hand if available
-    if (playerHands[playerId]) {
-      const existing = [...playerHands[playerId]];
-      while (existing.length < maxCards) existing.push("");
-      setSelectedCards(existing);
+    // Pre-fill existing cards if player already has a hand
+    const existingHand = playerHands[playerId];
+    if (existingHand && existingHand.length > 0) {
+      setSelectedCards(existingHand);
     } else {
-      // Initialize with empty strings
-      setSelectedCards(Array(maxCards).fill(""));
+      setSelectedCards([]);
     }
     setActiveSlot(0);
   };
@@ -202,6 +198,15 @@ export function ShowdownDialog() {
     // Award pot to winners
     const potPerWinner = Math.floor(totalPot / evaluationResult.winners.length);
 
+    // Identify folded players (players in the hand who didn't reach showdown)
+    const playersInHand = players.filter((p) =>
+      currentHand.playerHands.some((ph) => ph.playerId === p.id)
+    );
+    const playersAtShowdown = Object.keys(evaluationResult.allHands);
+    const foldedPlayers = playersInHand
+      .filter((p) => !playersAtShowdown.includes(p.id))
+      .map((p) => p.id);
+
     const summary = {
       id: Math.random().toString(36).substring(2, 15),
       handNumber: currentHand.handNumber,
@@ -219,6 +224,7 @@ export function ShowdownDialog() {
           handDescription: info.handDescription,
         })
       ),
+      foldedPlayers, // Add folded players
       totalPot,
       createdAt: new Date().toISOString(),
     };
@@ -522,44 +528,72 @@ export function ShowdownDialog() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {remainingPlayers.map((player) => {
-                      const hasHand = !!playerHands[player.id];
-                      return (
-                        <motion.button
-                          key={player.id}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleStartInput(player.id)}
-                          className={`relative p-4 rounded-xl border-2 text-left transition-all ${
-                            hasHand
-                              ? "bg-green-500/10 border-green-500/50"
-                              : "bg-card hover:bg-accent border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <div className="font-bold text-lg truncate">
-                            {player.name}
-                          </div>
-                          <div
-                            className={`text-sm mt-1 flex items-center gap-1 ${
-                              hasHand
-                                ? "text-green-600 font-medium"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {hasHand ? (
-                              <>
-                                <Check className="w-4 h-4" />
-                                <span>Ready</span>
-                              </>
-                            ) : (
-                              <span>Tap to enter</span>
-                            )}
-                          </div>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
+                  {/* Adaptive card size based on player count */}
+                  {(() => {
+                    const cardSize =
+                      remainingPlayers.length > 6 ? "small" : "medium";
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {remainingPlayers.map((player) => {
+                          const hasHand = !!playerHands[player.id];
+                          const hand = playerHands[player.id] || [];
+
+                          return (
+                            <motion.button
+                              key={player.id}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleStartInput(player.id)}
+                              className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                                hasHand
+                                  ? "bg-green-500/10 border-green-500/50"
+                                  : "bg-card hover:bg-accent border-border hover:border-primary/50"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-lg truncate">
+                                    {player.name}
+                                  </div>
+                                  <div
+                                    className={`text-sm mt-1 flex items-center gap-1 ${
+                                      hasHand
+                                        ? "text-green-600 font-medium"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {hasHand ? (
+                                      <>
+                                        <Check className="w-4 h-4" />
+                                        <span>Ready</span>
+                                      </>
+                                    ) : (
+                                      <span>Tap to enter</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Show entered cards */}
+                                {hasHand && (
+                                  <div className="flex gap-1.5 shrink-0">
+                                    {hand.map((card, i) => (
+                                      <Card
+                                        key={i}
+                                        code={card}
+                                        faceUp={true}
+                                        size={cardSize}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
                   {isReviewing && !needsInput && (
                     <motion.div
@@ -583,7 +617,7 @@ export function ShowdownDialog() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="space-y-6 py-8"
+              className="space-y-6 py-4"
             >
               <div className="text-center space-y-2">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-4">
@@ -591,25 +625,54 @@ export function ShowdownDialog() {
                 </div>
                 <h3 className="text-2xl font-bold">All Set!</h3>
                 <p className="text-muted-foreground">
-                  Hands are entered. Ready to see who won?
+                  All hands are entered. Ready to see who won?
                 </p>
+              </div>
+
+              {/* Show all players with their cards */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {remainingPlayers.map((player) => {
+                  const hand = playerHands[player.id] || [];
+                  const cardSize =
+                    remainingPlayers.length > 6 ? "small" : "medium";
+
+                  return (
+                    <div
+                      key={player.id}
+                      className="p-3 rounded-lg bg-muted/30 border border-border flex items-center justify-between gap-3"
+                    >
+                      <div className="font-medium truncate">{player.name}</div>
+                      <div className="flex gap-1.5 shrink-0">
+                        {hand.map((card, i) => (
+                          <Card
+                            key={i}
+                            code={card}
+                            faceUp={true}
+                            size={cardSize}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="space-y-3">
                 <Button
                   size="lg"
-                  className="w-full h-16 text-xl font-bold shadow-lg animate-pulse text-white"
+                  className="w-full h-14 text-lg font-bold bg-gradient-to-br from-primary to-primary/80"
                   onClick={handleEvaluate}
                 >
-                  Evaluate Hands
+                  🎲 Evaluate Hands
                 </Button>
                 <Button
                   variant="outline"
                   size="lg"
-                  className="w-full h-14 text-lg font-medium border-2 border-dashed"
+                  className="w-full"
                   onClick={() => setIsReviewing(true)}
                 >
-                  Review / Edit Hands
+                  <Eye className="w-4 h-4 mr-2" />
+                  Review / Edit
                 </Button>
               </div>
             </motion.div>

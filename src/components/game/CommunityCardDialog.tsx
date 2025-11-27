@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "./Card";
 import { cn, getStreetColor } from "@/lib/utils";
 
@@ -18,6 +18,14 @@ function CommunityCardForm() {
     Array(cardsNeeded).fill("")
   );
   const [activeSlot, setActiveSlot] = useState(0);
+  const prevStreetRef = useRef(currentHand?.currentStreet);
+
+  // Reset when street changes (important for all-in scenarios)
+  if (prevStreetRef.current !== currentHand?.currentStreet) {
+    prevStreetRef.current = currentHand?.currentStreet;
+    setSelectedCards(Array(cardsNeeded).fill(""));
+    setActiveSlot(0);
+  }
 
   if (!currentHand) return null;
 

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { persist } from "zustand/middleware";
 import { GAME_VARIANTS } from "../lib/constants";
 
-interface PokerStore extends TableState {
+export interface PokerStore extends TableState {
   // Actions
   setTableConfig: (
     name: string,
@@ -38,6 +38,9 @@ interface PokerStore extends TableState {
     activeModal: string | null;
   };
   setUiState: (partialUi: Partial<PokerStore["ui"]>) => void;
+
+  // State Restoration
+  restoreState: (state: Partial<TableState>) => void;
 }
 
 const initialState: TableState = {
@@ -245,6 +248,13 @@ export const usePokerStore = create<PokerStore>()(
           set((state) => ({
             ui: { ...state.ui, ...partialUi },
           })),
+
+        restoreState: (state) =>
+          set((currentState) => ({
+            ...currentState,
+            ...state,
+            ui: currentState.ui, // Preserve UI state
+          })),
       }),
       {
         limit: 50,
@@ -256,7 +266,7 @@ export const usePokerStore = create<PokerStore>()(
       }
     ),
     {
-      name: "poker-storage",
+      name: "poker-table-storage",
       partialize: (state) => {
         // Exclude UI state from persistence
         // eslint-disable-next-line @typescript-eslint/no-unused-vars

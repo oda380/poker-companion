@@ -16,8 +16,12 @@ import { ChipAnimation } from "@/components/game/ChipAnimation";
 
 import { NavBar } from "@/components/nav-bar";
 import { cn, getStreetColor, getStreetLabel } from "@/lib/utils";
+import { useAutoSaveGame } from "@/hooks/use-auto-save";
 
 export default function TablePage() {
+  // Auto-save game state
+  useAutoSaveGame();
+
   const router = useRouter();
   const tableId = usePokerStore((state) => state.id); // Keep this as it's used in the main div key
   const players = usePokerStore((state) => state.players);
