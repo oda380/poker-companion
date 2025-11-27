@@ -168,7 +168,7 @@ export function Controls() {
         </SheetTrigger>
         <SheetContent
           side="bottom"
-          className="h-auto max-h-[85vh] overflow-y-auto"
+          className="h-auto max-h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-xl"
         >
           <div className="flex flex-col gap-4 p-2">
             <div className="text-center text-2xl font-bold">Bet Amount</div>
