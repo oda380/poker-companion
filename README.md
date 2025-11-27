@@ -1,8 +1,8 @@
 # Poker Companion (v1.7.1)
 
-A professional-grade poker dealer assistant designed for home games. Host your own Texas Hold'em or 5-Card Stud games using a single device (tablet/laptop) as the table manager.
+A beginner friendly poker dealer assistant designed for home games. Host your own Texas Hold'em or 5-Card Stud games using a single device (tablet/laptop) as the table manager.
 
-![Poker Companion Hero](https://placehold.co/1200x600/1e293b/ffffff?text=Poker+Companion+v1.7.1)
+![Poker Companion Hero](public/hero.png)
 
 ## 🌟 Features
 
