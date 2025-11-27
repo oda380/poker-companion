@@ -434,18 +434,20 @@ export function processAction(
   }
 
   // --- Next player selection ---
-  const allPlayers = updatedPlayers
-    .filter(isPlayerInHand)
-    .sort((a, b) => a.seat - b.seat);
+  const allPlayersSorted = updatedPlayers.sort((a, b) => a.seat - b.seat);
 
-  const currentIndex = allPlayers.findIndex((p) => p.id === activePlayerId);
-  let nextIndex = (currentIndex + 1) % allPlayers.length;
-  let nextPlayer = allPlayers[nextIndex];
+  const currentIndex = allPlayersSorted.findIndex(
+    (p) => p.id === activePlayerId
+  );
 
+  let nextIndex = (currentIndex + 1) % allPlayersSorted.length;
+  let nextPlayer = allPlayersSorted[nextIndex];
   let attempts = 0;
-  while (nextPlayer.status !== "active" && attempts < allPlayers.length) {
-    nextIndex = (nextIndex + 1) % allPlayers.length;
-    nextPlayer = allPlayers[nextIndex];
+
+  // Find next player who is actually in the hand
+  while (!isPlayerInHand(nextPlayer) && attempts < allPlayersSorted.length) {
+    nextIndex = (nextIndex + 1) % allPlayersSorted.length;
+    nextPlayer = allPlayersSorted[nextIndex];
     attempts++;
   }
 
@@ -468,7 +470,7 @@ export function processAction(
   let roundComplete =
     activePlayersInRound.length === 0 || (allCommitmentsEqual && allHaveActed);
 
-  if (!roundComplete && attempts >= allPlayers.length) {
+  if (!roundComplete && attempts >= allPlayersSorted.length) {
     console.warn("Stuck in player loop - forcing round completion");
     roundComplete = true;
   }
