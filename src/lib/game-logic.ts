@@ -434,21 +434,30 @@ export function processAction(
   }
 
   // --- Next player selection ---
-  const allPlayersSorted = updatedPlayers.sort((a, b) => a.seat - b.seat);
+  const isActionable = (p: Player) => !p.isSittingOut && p.status === "active";
+
+  const allPlayersSorted = [...updatedPlayers].sort((a, b) => a.seat - b.seat);
 
   const currentIndex = allPlayersSorted.findIndex(
     (p) => p.id === activePlayerId
   );
 
-  let nextIndex = (currentIndex + 1) % allPlayersSorted.length;
-  let nextPlayer = allPlayersSorted[nextIndex];
-  let attempts = 0;
+  let nextPlayer: Player | undefined;
+  for (let i = 1; i <= allPlayersSorted.length; i++) {
+    const candidate =
+      allPlayersSorted[(currentIndex + i) % allPlayersSorted.length];
+    if (isActionable(candidate)) {
+      nextPlayer = candidate;
+      break;
+    }
+  }
 
-  // Find next player who is actually in the hand
-  while (!isPlayerInHand(nextPlayer) && attempts < allPlayersSorted.length) {
-    nextIndex = (nextIndex + 1) % allPlayersSorted.length;
-    nextPlayer = allPlayersSorted[nextIndex];
-    attempts++;
+  // If nobody is actionable, we’ll rely on roundComplete logic below.
+  // But we need a fallback for nextPlayer to avoid undefined errors if used later
+  if (!nextPlayer) {
+    // Fallback to current player if no one else can act (e.g. everyone else all-in)
+    // The round completion logic should catch this anyway.
+    nextPlayer = allPlayersSorted[currentIndex];
   }
 
   const activePlayersInRound = updatedPlayers.filter(
@@ -470,7 +479,7 @@ export function processAction(
   let roundComplete =
     activePlayersInRound.length === 0 || (allCommitmentsEqual && allHaveActed);
 
-  if (!roundComplete && attempts >= allPlayersSorted.length) {
+  if (!roundComplete && !nextPlayer) {
     console.warn("Stuck in player loop - forcing round completion");
     roundComplete = true;
   }
