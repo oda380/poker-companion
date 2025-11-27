@@ -131,6 +131,10 @@ export function initializeHand(
         return player;
       });
     });
+    // Set currentBet to ante for Stud games to prevent game from getting stuck
+    if (gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
+      currentBet = config.ante;
+    }
   }
 
   // Apply Blinds (Hold'em)

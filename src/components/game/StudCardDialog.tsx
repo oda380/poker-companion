@@ -10,6 +10,7 @@ import { CardKeyboard } from "./CardKeyboard";
 import { useState } from "react";
 import { Card } from "./Card";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn, getStreetColor, getStreetLabel } from "@/lib/utils";
 
 function StudCardForm() {
   const currentHand = usePokerStore((state) => state.currentHand);
@@ -200,11 +201,20 @@ function StudCardForm() {
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            <div className="text-center space-y-4">
-              <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary font-bold tracking-wider text-sm border border-primary/20 uppercase">
-                {streetName}
+            {/* Street Indicator */}
+            <div className="text-center">
+              <div
+                className={cn(
+                  "inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold tracking-wider text-sm border uppercase",
+                  getStreetColor(currentHand.currentStreet)
+                )}
+              >
+                {getStreetLabel(currentHand.currentStreet)}
               </div>
+            </div>
 
+            {/* Player Info */}
+            <div className="text-center space-y-4">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground uppercase tracking-wider font-bold">
                   Dealing to
