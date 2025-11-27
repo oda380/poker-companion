@@ -14,3 +14,9 @@ export const GAME_VARIANTS = {
     shortLabel: "Stud",
   },
 } as const;
+
+export const DEVELOPER_INFO = {
+  NAME: "Kitaek Lim",
+  EMAIL: "ktlim380@yahoo.com",
+  GITHUB_URL: "https://github.com/oda380/poker-companion",
+} as const;

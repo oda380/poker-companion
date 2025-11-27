@@ -10,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { APP_VERSION, DEVELOPER_INFO } from "@/lib/constants";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
@@ -79,7 +80,7 @@ export function AboutDialog() {
             <div className="space-y-2 pt-2 border-t">
               <h3 className="font-semibold">Developer Info</h3>
               <p className="text-sm text-muted-foreground">
-                Created by Kitaek Lim
+                Created by {DEVELOPER_INFO.NAME}
               </p>
             </div>
 
@@ -92,10 +93,11 @@ export function AboutDialog() {
 
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">
-                © {new Date().getFullYear()} Kitaek Lim. All rights reserved.
+                © {new Date().getFullYear()} {DEVELOPER_INFO.NAME}. All rights
+                reserved.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Version 1.8.0
+                Version {APP_VERSION}
               </p>
             </div>
           </div>

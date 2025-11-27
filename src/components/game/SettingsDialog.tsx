@@ -13,7 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePokerStore } from "@/store/usePokerStore";
-import { APP_VERSION, DEFAULT_STACK, GAME_VARIANTS } from "@/lib/constants";
+import {
+  APP_VERSION,
+  DEFAULT_STACK,
+  DEVELOPER_INFO,
+  GAME_VARIANTS,
+} from "@/lib/constants";
 import {
   Settings,
   Trash2,
@@ -263,7 +268,7 @@ export function SettingsDialog() {
                 <div className="flex gap-2 pt-4">
                   <Button variant="outline" size="sm" className="gap-2" asChild>
                     <a
-                      href="https://github.com/oda380/poker-companion"
+                      href={DEVELOPER_INFO.GITHUB_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -272,7 +277,7 @@ export function SettingsDialog() {
                     </a>
                   </Button>
                   <Button variant="outline" size="sm" className="gap-2" asChild>
-                    <a href="mailto:ktlim380@yahoo.com">
+                    <a href={`mailto:${DEVELOPER_INFO.EMAIL}`}>
                       <Mail className="w-4 h-4" />
                       Contact
                     </a>
@@ -281,8 +286,8 @@ export function SettingsDialog() {
 
                 <div className="pt-8 text-xs text-muted-foreground">
                   <p>
-                    © {new Date().getFullYear()} Kitaek Lim. All rights
-                    reserved.
+                    © {new Date().getFullYear()} {DEVELOPER_INFO.NAME}. All
+                    rights reserved.
                   </p>
                 </div>
               </div>
