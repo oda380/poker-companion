@@ -42,10 +42,22 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
 
         <Tabs defaultValue="holdem" className="w-full h-full">
           <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="holdem">Texas Hold&apos;em</TabsTrigger>
-            <TabsTrigger value="stud">5-Card Stud</TabsTrigger>
-            <TabsTrigger value="rankings">Hand Rankings</TabsTrigger>
-            <TabsTrigger value="usage">How to Use</TabsTrigger>
+            <TabsTrigger value="holdem">
+              <span className="sm:hidden">Hold&apos;em</span>
+              <span className="hidden sm:inline">Texas Hold&apos;em</span>
+            </TabsTrigger>
+            <TabsTrigger value="stud">
+              <span className="sm:hidden">Stud</span>
+              <span className="hidden sm:inline">5-Card Stud</span>
+            </TabsTrigger>
+            <TabsTrigger value="rankings">
+              <span className="sm:hidden">Rankings</span>
+              <span className="hidden sm:inline">Hand Rankings</span>
+            </TabsTrigger>
+            <TabsTrigger value="usage">
+              <span className="sm:hidden">Usage</span>
+              <span className="hidden sm:inline">How to Use</span>
+            </TabsTrigger>
           </TabsList>
 
           <ScrollArea className="h-[50vh] pr-4">

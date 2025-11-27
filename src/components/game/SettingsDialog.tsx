@@ -13,7 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePokerStore } from "@/store/usePokerStore";
-import { Settings, Trash2, Plus, Pencil, Check } from "lucide-react";
+import {
+  Settings,
+  Trash2,
+  Plus,
+  Pencil,
+  Check,
+  Spade,
+  Github,
+  Mail,
+} from "lucide-react";
 import { useState } from "react";
 
 export function SettingsDialog() {
@@ -231,73 +240,47 @@ export function SettingsDialog() {
             </TabsContent>
 
             <TabsContent value="about" className="space-y-4 py-4">
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg text-foreground">
-                    What is Poker Companion?
-                  </h3>
-                  <p className="leading-relaxed">
-                    A modern, local-first poker table companion app designed for
-                    home games. Track players, manage blinds, and keep a
-                    detailed history of every hand—all without requiring a
-                    centralized server.
-                  </p>
+              <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-2">
+                  <Spade className="w-8 h-8 text-primary fill-primary" />
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg text-foreground">
-                    How to Use
+                <div className="space-y-1">
+                  <h3 className="font-bold text-2xl text-foreground">
+                    Poker Companion
                   </h3>
-                  <p className="leading-relaxed">
-                    This app acts as your digital dealer for offline games,
-                    perfect for beginners:
-                  </p>
-                  <ul className="space-y-1 list-disc list-inside mt-2">
-                    <li>
-                      <strong>Organize:</strong> Track turns, blinds, and dealer
-                      button automatically.
-                    </li>
-                    <li>
-                      <strong>Calculate:</strong> Let the app handle pot math,
-                      bets, and side pots.
-                    </li>
-                    <li>
-                      <strong>Resolve:</strong> Easily determine winners and
-                      distribute chips at showdown.
-                    </li>
-                  </ul>
+                  <p className="text-sm text-muted-foreground">Version 1.8.0</p>
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg text-foreground">
-                    Key Features
-                  </h3>
-                  <ul className="space-y-1 list-disc list-inside">
-                    <li>Support for Texas Hold&apos;em and 5-Card Stud</li>
-                    <li>Local data storage with IndexedDB (Dexie.js)</li>
-                    <li>Detailed hand history and game session tracking</li>
-                    <li>Customizable blinds, antes, and player management</li>
-                    <li>Dark and light mode support</li>
-                    <li>Mobile-optimized interface</li>
-                  </ul>
+                <p className="text-muted-foreground max-w-xs mx-auto">
+                  A modern, local-first poker table companion app designed for
+                  home games.
+                </p>
+
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" size="sm" className="gap-2" asChild>
+                    <a
+                      href="https://github.com/oda380/poker-companion"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Github className="w-4 h-4" />
+                      GitHub
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2" asChild>
+                    <a href="mailto:ktlim380@yahoo.com">
+                      <Mail className="w-4 h-4" />
+                      Contact
+                    </a>
+                  </Button>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t">
-                  <h4 className="font-medium text-foreground">
-                    Developer Info
-                  </h4>
-                  <p>Created by Kitaek Lim</p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="font-medium text-foreground">Contact</h4>
-                  <p>ktlim380@yahoo.com</p>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs">
+                <div className="pt-8 text-xs text-muted-foreground">
+                  <p>
                     © {new Date().getFullYear()} Kitaek Lim. All rights
                     reserved.
                   </p>
-                  <p className="text-xs mt-1">Version 1.8.0</p>
                 </div>
               </div>
             </TabsContent>
