@@ -231,7 +231,7 @@ export default function SetupPage() {
 
             <Button
               size="lg"
-              className="w-full h-14 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50"
+              className="w-full h-16 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white disabled:opacity-50"
               onClick={handleStart}
             >
               Create Table

@@ -79,7 +79,7 @@ function DealerSelectionForm({ onSelectDealer }: DealerSelectionDialogProps) {
 
         <Button
           size="lg"
-          className="w-full"
+          className="w-full h-14"
           onClick={handleConfirm}
           disabled={selectedSeat === null}
         >

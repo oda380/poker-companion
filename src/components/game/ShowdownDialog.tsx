@@ -32,6 +32,7 @@ export function ShowdownDialog() {
   const [evaluationResult, setEvaluationResult] =
     useState<EvaluationResult | null>(null);
   const [activeSlot, setActiveSlot] = useState(0);
+  const [isReviewing, setIsReviewing] = useState(false);
 
   // Only show if hand is in showdown phase (no active player)
   const isShowdown = currentHand && currentHand.activePlayerId === "";
@@ -110,9 +111,17 @@ export function ShowdownDialog() {
 
   const handleStartInput = (playerId: string) => {
     setCurrentInputPlayer(playerId);
-    // Initialize with empty strings for the required number of cards
     const maxCards = isStud ? 1 : 2;
-    setSelectedCards(Array(maxCards).fill(""));
+
+    // Pre-fill with existing hand if available
+    if (playerHands[playerId]) {
+      const existing = [...playerHands[playerId]];
+      while (existing.length < maxCards) existing.push("");
+      setSelectedCards(existing);
+    } else {
+      // Initialize with empty strings
+      setSelectedCards(Array(maxCards).fill(""));
+    }
     setActiveSlot(0);
   };
 
@@ -245,6 +254,9 @@ export function ShowdownDialog() {
       // If inputting a hand, go back to player list
       setCurrentInputPlayer(null);
       setSelectedCards([]);
+    } else if (isReviewing) {
+      // If reviewing, go back to "All Set" view (if all valid)
+      setIsReviewing(false);
     } else {
       // Otherwise, close dialog (undo)
       usePokerStore.temporal.getState().undo();
@@ -381,7 +393,7 @@ export function ShowdownDialog() {
                 Start Next Hand
               </Button>
             </div>
-          ) : needsInput ? (
+          ) : needsInput || isReviewing ? (
             /* Hand Input Screen */
             <AnimatePresence mode="wait">
               {currentInputPlayer ? (
@@ -465,6 +477,12 @@ export function ShowdownDialog() {
                       onCardSelect={handleCardSelect}
                       usedCards={[
                         ...currentHand.board,
+                        // Include all face-up cards from all players to prevent duplicates
+                        ...currentHand.playerHands.flatMap((ph) =>
+                          ph.cards
+                            .filter((c) => c.faceUp && c.code)
+                            .map((c) => c.code)
+                        ),
                         ...Object.values(playerHands).flat(),
                         ...selectedCards.filter((c) => c !== ""),
                       ]}
@@ -536,6 +554,22 @@ export function ShowdownDialog() {
                       );
                     })}
                   </div>
+
+                  {isReviewing && !needsInput && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="pt-2"
+                    >
+                      <Button
+                        className="w-full h-12 text-lg font-bold"
+                        variant="secondary"
+                        onClick={() => setIsReviewing(false)}
+                      >
+                        Done Reviewing
+                      </Button>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -555,13 +589,23 @@ export function ShowdownDialog() {
                 </p>
               </div>
 
-              <Button
-                size="lg"
-                className="w-full h-16 text-xl font-bold shadow-lg animate-pulse"
-                onClick={handleEvaluate}
-              >
-                Evaluate Hands
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  size="lg"
+                  className="w-full h-16 text-xl font-bold shadow-lg animate-pulse text-white"
+                  onClick={handleEvaluate}
+                >
+                  Evaluate Hands
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-14 text-lg font-medium border-2 border-dashed"
+                  onClick={() => setIsReviewing(true)}
+                >
+                  Review / Edit Hands
+                </Button>
+              </div>
             </motion.div>
           )}
         </div>

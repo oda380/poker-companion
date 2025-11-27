@@ -51,7 +51,7 @@ export default function Home() {
         <div className="space-y-4">
           <Button
             size="lg"
-            className="w-full text-lg h-16 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02]"
+            className="w-full text-lg h-16 rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:scale-[1.02] text-white"
             onClick={() => router.push("/setup")}
           >
             Start New Table
@@ -62,7 +62,7 @@ export default function Home() {
           <Button
             variant="secondary"
             size="lg"
-            className="w-full text-lg h-16 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+            className="w-full text-lg h-14 rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
             onClick={() => router.push("/history")}
           >
             Game History
@@ -71,7 +71,7 @@ export default function Home() {
           <Button
             variant="outline"
             size="lg"
-            className="w-full text-lg h-16 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm transition-all"
+            className="w-full text-lg h-14 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 backdrop-blur-sm transition-all"
             disabled
           >
             Resume Session
@@ -83,7 +83,7 @@ export default function Home() {
 
         <div className="mt-12 text-center">
           <p className="text-xs text-muted-foreground/50 uppercase tracking-widest">
-            Supports {GAME_VARIANTS.TEXAS_HOLDEM.label} &{" "}
+            Supports {GAME_VARIANTS.TEXAS_HOLDEM.label} &amp;{" "}
             {GAME_VARIANTS.FIVE_CARD_STUD.label}
           </p>
           <p className="text-[10px] text-muted-foreground/30 mt-2">
