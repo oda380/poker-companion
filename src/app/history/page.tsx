@@ -15,8 +15,12 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import * as React from "react";
 import { format } from "date-fns";
 import { clearDatabase } from "@/lib/db";
+import { exportGameData, importGameData } from "@/lib/data-export";
+import { toast } from "sonner";
+import { Download, Upload } from "lucide-react";
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -26,6 +30,7 @@ export default function HistoryPage() {
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(
     null
   );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const toggleSession = (sessionId: string) => {
     if (expandedSessionId === sessionId) {
@@ -45,6 +50,32 @@ export default function HistoryPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      await exportGameData();
+      toast.success("Export successful!", {
+        description: "Your game history has been downloaded",
+      });
+    } catch (error) {
+      toast.error("Export failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
+  const handleImport = async (file: File) => {
+    try {
+      const count = await importGameData(file);
+      toast.success("Import successful!", {
+        description: `Imported ${count} game session${count !== 1 ? "s" : ""}`,
+      });
+    } catch (error) {
+      toast.error("Import failed", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
@@ -56,16 +87,48 @@ export default function HistoryPage() {
             </Button>
             <h1 className="text-3xl font-bold">Game History</h1>
           </div>
-          {sessions && sessions.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleClearHistory}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear History
+          <div className="flex items-center gap-2">
+            {/* Export Button */}
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
             </Button>
-          )}
+
+            {/* Import Button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  await handleImport(file);
+                  e.target.value = ""; // Reset input
+                }
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import
+            </Button>
+
+            {/* Clear History Button */}
+            {sessions && sessions.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleClearHistory}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Session List */}

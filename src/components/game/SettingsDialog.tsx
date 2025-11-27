@@ -28,8 +28,17 @@ import {
   Spade,
   Github,
   Mail,
+  Download,
+  Upload,
+  AlertTriangle,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import {
+  exportGameData,
+  importGameData,
+  clearAllData,
+} from "@/lib/data-export";
+import { toast } from "sonner";
 
 export function SettingsDialog() {
   const players = usePokerStore((state) => state.players);
@@ -46,6 +55,8 @@ export function SettingsDialog() {
   const [newPlayerStack, setNewPlayerStack] = useState(DEFAULT_STACK);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddPlayer = () => {
     if (newPlayerName.trim()) {
@@ -92,9 +103,10 @@ export function SettingsDialog() {
 
         <ScrollArea className="flex-1 pr-4">
           <Tabs defaultValue="players" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="players">Players</TabsTrigger>
               <TabsTrigger value="game">Game</TabsTrigger>
+              <TabsTrigger value="data">Data</TabsTrigger>
               <TabsTrigger value="about">About</TabsTrigger>
             </TabsList>
 
@@ -244,6 +256,169 @@ export function SettingsDialog() {
                 </div>
               </div>
             </TabsContent>
+
+            {/* Data Tab */}
+            <TabsContent value="data" className="space-y-6">
+              <div className="space-y-4">
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg">Backup & Restore</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Export your game history or import from a backup file
+                  </p>
+                </div>
+
+                {/* Export */}
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 gap-2"
+                    onClick={async () => {
+                      try {
+                        await exportGameData();
+                        toast.success("Export successful!", {
+                          description: "Your game history has been downloaded",
+                        });
+                      } catch (error) {
+                        toast.error("Export failed", {
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : "Unknown error",
+                        });
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Game History
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Download all your game sessions as a JSON file
+                  </p>
+                </div>
+
+                {/* Import */}
+                <div className="space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      try {
+                        const count = await importGameData(file);
+                        toast.success("Import successful!", {
+                          description: `Imported ${count} game session${
+                            count !== 1 ? "s" : ""
+                          }`,
+                        });
+                      } catch (error) {
+                        toast.error("Import failed", {
+                          description:
+                            error instanceof Error
+                              ? error.message
+                              : "Unknown error",
+                        });
+                      }
+                      // Reset file input
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="w-4 h-4" />
+                    Import Game History
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Restore sessions from a backup file
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Danger Zone
+                    </span>
+                  </div>
+                </div>
+
+                {/* Clear Data */}
+                {!showClearConfirm ? (
+                  <div className="space-y-2">
+                    <Button
+                      variant="destructive"
+                      className="w-full h-12 gap-2"
+                      onClick={() => setShowClearConfirm(true)}
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      Clear All Data
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Permanently delete all game history
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-4 border border-destructive/50 rounded-lg bg-destructive/10">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-destructive">
+                          Are you absolutely sure?
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          This will permanently delete all your game sessions.
+                          This action cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setShowClearConfirm(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1"
+                        onClick={async () => {
+                          try {
+                            await clearAllData();
+                            toast.success("Data cleared", {
+                              description: "All game history has been deleted",
+                            });
+                            setShowClearConfirm(false);
+                          } catch (error) {
+                            toast.error("Clear failed", {
+                              description:
+                                error instanceof Error
+                                  ? error.message
+                                  : "Unknown error",
+                            });
+                          }
+                        }}
+                      >
+                        Delete Everything
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* About Tab */}
 
             <TabsContent value="about" className="space-y-4 py-4">
               <div className="flex flex-col items-center justify-center text-center space-y-4 py-8">
