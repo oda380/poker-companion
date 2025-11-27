@@ -1,16 +1,19 @@
-# Poker Companion (v1)
+# Poker Companion (v1.7)
 
 A professional-grade poker dealer assistant designed for home games. Host your own Texas Hold'em or 5-Card Stud games using a single device (tablet/laptop) as the table manager.
 
-![Poker Companion Hero](https://placehold.co/1200x600/1e293b/ffffff?text=Poker+Companion+v1)
+![Poker Companion Hero](https://placehold.co/1200x600/1e293b/ffffff?text=Poker+Companion+v1.7)
 
 ## 🌟 Features
 
 ### 🎮 Game Modes
+
 - **Texas Hold'em**: Full support for ring games and heads-up play with correct blind positions and action order.
 - **5-Card Stud**: Classic stud poker support with face-up/face-down card tracking.
+- **Visual Hand Rankings**: Built-in reference guide with visual card examples for all poker hands.
 
 ### 💎 Premium Experience
+
 - **Production Design**: Deep slate/navy aesthetic with emerald accents and glassmorphism UI.
 - **Advanced Animations**:
   - 🃏 **3D Card Flips**: Realistic CSS-based card reveal animations.
@@ -19,6 +22,7 @@ A professional-grade poker dealer assistant designed for home games. Host your o
 - **Dark Mode**: Fully supported with system preference detection.
 
 ### 🛠️ Dealer Tools
+
 - **Session Persistence**: Games are automatically saved to local storage. Refresh without losing progress.
 - **Dynamic Settings**:
   - Add/Remove players mid-game.
@@ -30,6 +34,7 @@ A professional-grade poker dealer assistant designed for home games. Host your o
 ## 🚀 Use Case: "The Dealer Companion"
 
 This app is designed to be used on a **single shared device** (like an iPad or Laptop) placed at the poker table.
+
 - **The Dealer** (or players taking turns) inputs actions.
 - **The App** handles the math, pot calculations, dealer button rotation, and blind levels.
 - **No Internet Required**: Works fully offline once loaded (PWA-ready architecture).
@@ -45,6 +50,7 @@ This app is designed to be used on a **single shared device** (like an iPad or L
 ## 📦 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - npm, yarn, pnpm, or bun
 
@@ -87,7 +93,7 @@ src/
 └── types.ts          # TypeScript Definitions
 ```
 
-## ⚠️ Known Limitations (v1)
+## ⚠️ Known Limitations (v1.7)
 
 - **Side Pots**: Currently, all bets go to a single main pot. Side pot logic is planned for v2.
 - **Multiplayer Sync**: This is a **local-only** tool. Players cannot join from their own phones to see hole cards (yet).

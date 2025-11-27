@@ -8,6 +8,7 @@ import {
   PlayerHandState,
 } from "../types";
 import { createDeck, shuffleDeck, dealCards } from "./deck";
+import { GAME_VARIANTS } from "./constants";
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -15,7 +16,7 @@ function getNextStreet(
   currentStreet: Street,
   gameVariant: GameVariant
 ): Street {
-  if (gameVariant === "texasHoldem") {
+  if (gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id) {
     switch (currentStreet) {
       case "preflop":
         return "flop";
@@ -133,7 +134,11 @@ export function initializeHand(
   }
 
   // Apply Blinds (Hold'em)
-  if (gameVariant === "texasHoldem" && config.smallBlind && config.bigBlind) {
+  if (
+    gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id &&
+    config.smallBlind &&
+    config.bigBlind
+  ) {
     // Find SB and BB positions
     const dealerIndex = activePlayers.findIndex((p) => p.seat === dealerSeat);
     let sbIndex: number;
@@ -200,7 +205,7 @@ export function initializeHand(
   // 4. Deal Cards
   let playerHands: PlayerHandState[] = [];
   let firstToAct: string = "";
-  if (gameVariant === "fiveCardStud") {
+  if (gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
     // Initialize hands with one placeholder hole card (face-down, unknown)
     // Dealer confirms dealing these without seeing them
     playerHands = activePlayers.map((p) => ({
@@ -229,7 +234,8 @@ export function initializeHand(
     handNumber: table.handHistory.length + 1,
     gameVariant,
     dealerSeat,
-    currentStreet: gameVariant === "texasHoldem" ? "preflop" : "street1",
+    currentStreet:
+      gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id ? "preflop" : "street1",
     board: [],
     playerHands,
     pots: [],
@@ -465,7 +471,7 @@ export function processAction(
       newActivePlayerId = ""; // Empty string indicates showdown phase
     } else {
       // Progress to next street
-      if (hand.gameVariant === "texasHoldem") {
+      if (hand.gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id) {
         // Hold'em: Deal community cards
         return {
           ...table,

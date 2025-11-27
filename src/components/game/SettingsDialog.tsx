@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePokerStore } from "@/store/usePokerStore";
+import { APP_VERSION, DEFAULT_STACK, GAME_VARIANTS } from "@/lib/constants";
 import {
   Settings,
   Trash2,
@@ -37,7 +38,7 @@ export function SettingsDialog() {
   const updatePlayerName = usePokerStore((state) => state.updatePlayerName);
 
   const [newPlayerName, setNewPlayerName] = useState("");
-  const [newPlayerStack, setNewPlayerStack] = useState(1000);
+  const [newPlayerStack, setNewPlayerStack] = useState(DEFAULT_STACK);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
 
@@ -199,7 +200,7 @@ export function SettingsDialog() {
 
             <TabsContent value="game" className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
-                {gameVariant !== "fiveCardStud" && (
+                {gameVariant !== GAME_VARIANTS.FIVE_CARD_STUD.id && (
                   <>
                     <div className="space-y-2">
                       <Label>Small Blind</Label>
@@ -249,7 +250,9 @@ export function SettingsDialog() {
                   <h3 className="font-bold text-2xl text-foreground">
                     Poker Companion
                   </h3>
-                  <p className="text-sm text-muted-foreground">Version 1.8.0</p>
+                  <p className="text-sm text-muted-foreground">
+                    Version {APP_VERSION}
+                  </p>
                 </div>
 
                 <p className="text-muted-foreground max-w-xs mx-auto">

@@ -4,6 +4,7 @@ import { TableState, Player, GameVariant, TableConfig } from "../types";
 import { initializeHand, processAction } from "../lib/game-logic";
 import { toast } from "sonner";
 import { persist } from "zustand/middleware";
+import { GAME_VARIANTS } from "../lib/constants";
 
 interface PokerStore extends TableState {
   // Actions
@@ -42,7 +43,7 @@ interface PokerStore extends TableState {
 const initialState: TableState = {
   id: "default-table",
   name: "My Poker Game",
-  gameVariant: "texasHoldem",
+  gameVariant: GAME_VARIANTS.TEXAS_HOLDEM.id,
   config: {
     smallBlind: 1,
     bigBlind: 2,

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { RulesDialog } from "@/components/game/RulesDialog";
 import { AboutDialog } from "@/components/about-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { APP_VERSION, GAME_VARIANTS } from "@/lib/constants";
 
 export default function Home() {
   const router = useRouter();
@@ -82,7 +83,11 @@ export default function Home() {
 
         <div className="mt-12 text-center">
           <p className="text-xs text-muted-foreground/50 uppercase tracking-widest">
-            Supports Texas Hold'em & 5-Card Stud
+            Supports {GAME_VARIANTS.TEXAS_HOLDEM.label} &{" "}
+            {GAME_VARIANTS.FIVE_CARD_STUD.label}
+          </p>
+          <p className="text-[10px] text-muted-foreground/30 mt-2">
+            v{APP_VERSION}
           </p>
         </div>
       </motion.div>

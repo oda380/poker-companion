@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { BookOpen } from "lucide-react";
 import { Card } from "@/components/game/Card";
+import { GAME_VARIANTS } from "@/lib/constants";
 
 interface RulesDialogProps {
   trigger?: React.ReactNode;
@@ -40,15 +41,26 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="holdem" className="w-full h-full">
+        <Tabs
+          defaultValue={GAME_VARIANTS.TEXAS_HOLDEM.id}
+          className="w-full h-full"
+        >
           <TabsList className="grid w-full grid-cols-4 mb-4">
-            <TabsTrigger value="holdem">
-              <span className="sm:hidden">Hold&apos;em</span>
-              <span className="hidden sm:inline">Texas Hold&apos;em</span>
+            <TabsTrigger value={GAME_VARIANTS.TEXAS_HOLDEM.id}>
+              <span className="sm:hidden">
+                {GAME_VARIANTS.TEXAS_HOLDEM.shortLabel}
+              </span>
+              <span className="hidden sm:inline">
+                {GAME_VARIANTS.TEXAS_HOLDEM.label}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="stud">
-              <span className="sm:hidden">Stud</span>
-              <span className="hidden sm:inline">5-Card Stud</span>
+            <TabsTrigger value={GAME_VARIANTS.FIVE_CARD_STUD.id}>
+              <span className="sm:hidden">
+                {GAME_VARIANTS.FIVE_CARD_STUD.shortLabel}
+              </span>
+              <span className="hidden sm:inline">
+                {GAME_VARIANTS.FIVE_CARD_STUD.label}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="rankings">
               <span className="sm:hidden">Rankings</span>
@@ -61,7 +73,10 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
           </TabsList>
 
           <ScrollArea className="h-[50vh] pr-4">
-            <TabsContent value="holdem" className="space-y-4">
+            <TabsContent
+              value={GAME_VARIANTS.TEXAS_HOLDEM.id}
+              className="space-y-4"
+            >
               <div className="space-y-4 text-sm text-muted-foreground">
                 <section>
                   <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -109,7 +124,10 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="stud" className="space-y-4">
+            <TabsContent
+              value={GAME_VARIANTS.FIVE_CARD_STUD.id}
+              className="space-y-4"
+            >
               <div className="space-y-4 text-sm text-muted-foreground">
                 <section>
                   <h3 className="text-lg font-semibold text-foreground mb-2">
