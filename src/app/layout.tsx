@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Poker",
+    title: "Poker Companion",
   },
   other: {
     "mobile-web-app-capable": "yes",

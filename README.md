@@ -1,15 +1,22 @@
-# Poker Companion (v1.7)
+# Poker Companion (v1.7.1)
 
 A professional-grade poker dealer assistant designed for home games. Host your own Texas Hold'em or 5-Card Stud games using a single device (tablet/laptop) as the table manager.
 
-![Poker Companion Hero](https://placehold.co/1200x600/1e293b/ffffff?text=Poker+Companion+v1.7)
+![Poker Companion Hero](https://placehold.co/1200x600/1e293b/ffffff?text=Poker+Companion+v1.7.1)
 
 ## 🌟 Features
+
+### 📱 PWA & Offline First
+
+- **Installable**: Add to Home Screen on iOS and Android for a native app experience.
+- **Offline Capable**: Works fully offline with a robust "Network First" caching strategy.
+- **Auto-Update**: Automatically fetches the latest version when online.
 
 ### 🎮 Game Modes
 
 - **Texas Hold'em**: Full support for ring games and heads-up play with correct blind positions and action order.
 - **5-Card Stud**: Classic stud poker support with face-up/face-down card tracking.
+- **Resume Game**: Smart session recovery lets you pick up exactly where you left off, even after closing the app.
 - **Visual Hand Rankings**: Built-in reference guide with visual card examples for all poker hands.
 
 ### 💎 Premium Experience
@@ -23,12 +30,14 @@ A professional-grade poker dealer assistant designed for home games. Host your o
 
 ### 🛠️ Dealer Tools
 
-- **Session Persistence**: Games are automatically saved to local storage. Refresh without losing progress.
+- **Session Persistence**: Games are automatically saved to local storage (IndexedDB).
+- **History Management**:
+  - **Export/Import**: Backup your game history or transfer it to another device.
+  - **Mobile Layout**: Stacked headers for better readability on small screens.
 - **Dynamic Settings**:
   - Add/Remove players mid-game.
   - Adjust blinds and antes on the fly.
   - Toggle themes (Light/Dark/System).
-- **Hand History**: Complete log of past hands, winners, and pot sizes.
 - **Undo/Redo**: Mistake-proof your game with full state rollback capabilities.
 
 ## 🚀 Use Case: "The Dealer Companion"
@@ -37,13 +46,14 @@ This app is designed to be used on a **single shared device** (like an iPad or L
 
 - **The Dealer** (or players taking turns) inputs actions.
 - **The App** handles the math, pot calculations, dealer button rotation, and blind levels.
-- **No Internet Required**: Works fully offline once loaded (PWA-ready architecture).
+- **No Internet Required**: Works fully offline once loaded.
 
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
 - **Styling**: Tailwind CSS 4 + OKLCH Colors
-- **State**: Zustand + Zundo (Undo/Redo) + Persist Middleware
+- **State**: Zustand + Zundo (Undo/Redo)
+- **Persistence**: Dexie.js (IndexedDB) + Persist Middleware
 - **Animations**: Framer Motion + Canvas Confetti
 - **Logic**: Custom poker engine + `poker-evaluator`
 
@@ -93,7 +103,7 @@ src/
 └── types.ts          # TypeScript Definitions
 ```
 
-## ⚠️ Known Limitations (v1.7)
+## ⚠️ Known Limitations (v1.7.1)
 
 - **Side Pots**: Currently, all bets go to a single main pot. Side pot logic is planned for v2.
 - **Multiplayer Sync**: This is a **local-only** tool. Players cannot join from their own phones to see hole cards (yet).

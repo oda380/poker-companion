@@ -1,6 +1,6 @@
 {
   "name": "Poker Companion",
-  "short_name": "Poker",
+  "short_name": "Poker Companion",
   "description": "The ultimate companion for your home poker games",
   "start_url": "/",
   "display": "standalone",

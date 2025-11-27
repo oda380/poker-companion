@@ -38,10 +38,12 @@ export default function SetupPage() {
 
   const [tableName, setTableName] = useState("Friday Night Poker");
   const [variant, setVariant] = useState<GameVariant>("texasHoldem");
-  const [smallBlind, setSmallBlind] = useState(1);
-  const [bigBlind, setBigBlind] = useState(2);
-  const [ante, setAnte] = useState(0);
-  const [startingStack, setStartingStack] = useState(DEFAULT_STACK);
+  const [smallBlind, setSmallBlind] = useState<number | "">(1);
+  const [bigBlind, setBigBlind] = useState<number | "">(2);
+  const [ante, setAnte] = useState<number | "">(0);
+  const [startingStack, setStartingStack] = useState<number | "">(
+    DEFAULT_STACK
+  );
   const [playerCount, setPlayerCount] = useState(4);
   const [playerNames, setPlayerNames] = useState<string[]>(
     Array(9)
@@ -73,14 +75,19 @@ export default function SetupPage() {
 
       // Set new config
       setTableConfig(tableName, variant, {
-        smallBlind: variant === "texasHoldem" ? smallBlind : undefined,
-        bigBlind: variant === "texasHoldem" ? bigBlind : undefined,
-        ante: ante > 0 ? ante : undefined,
+        smallBlind:
+          variant === "texasHoldem" ? Number(smallBlind) || 0 : undefined,
+        bigBlind: variant === "texasHoldem" ? Number(bigBlind) || 0 : undefined,
+        ante: Number(ante) > 0 ? Number(ante) : undefined,
       });
 
       // Add initial players with custom names
       for (let i = 0; i < playerCount; i++) {
-        addPlayer(playerNames[i] || `Player ${i + 1}`, i + 1, startingStack);
+        addPlayer(
+          playerNames[i] || `Player ${i + 1}`,
+          i + 1,
+          Number(startingStack) || DEFAULT_STACK
+        );
       }
 
       router.push("/table");
@@ -113,6 +120,7 @@ export default function SetupPage() {
                 ref={tableNameInputRef}
                 value={tableName}
                 onChange={(e) => setTableName(e.target.value)}
+                onFocus={(e) => e.target.select()}
                 className="h-12 text-lg bg-background/50 border-white/10 focus:border-primary/50 transition-colors"
                 placeholder="Enter table name..."
               />
@@ -150,7 +158,12 @@ export default function SetupPage() {
                     <Input
                       type="number"
                       value={smallBlind}
-                      onChange={(e) => setSmallBlind(Number(e.target.value))}
+                      onChange={(e) =>
+                        setSmallBlind(
+                          e.target.value === "" ? "" : Number(e.target.value)
+                        )
+                      }
+                      onFocus={(e) => e.target.select()}
                       className="bg-background/50 border-white/10"
                     />
                   </div>
@@ -159,7 +172,12 @@ export default function SetupPage() {
                     <Input
                       type="number"
                       value={bigBlind}
-                      onChange={(e) => setBigBlind(Number(e.target.value))}
+                      onChange={(e) =>
+                        setBigBlind(
+                          e.target.value === "" ? "" : Number(e.target.value)
+                        )
+                      }
+                      onFocus={(e) => e.target.select()}
                       className="bg-background/50 border-white/10"
                     />
                   </div>
@@ -170,7 +188,10 @@ export default function SetupPage() {
                 <Input
                   type="number"
                   value={ante}
-                  onChange={(e) => setAnte(Number(e.target.value))}
+                  onChange={(e) =>
+                    setAnte(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                  onFocus={(e) => e.target.select()}
                   className="bg-background/50 border-white/10"
                 />
               </div>
@@ -179,7 +200,12 @@ export default function SetupPage() {
                 <Input
                   type="number"
                   value={startingStack}
-                  onChange={(e) => setStartingStack(Number(e.target.value))}
+                  onChange={(e) =>
+                    setStartingStack(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  onFocus={(e) => e.target.select()}
                   className="bg-background/50 border-white/10"
                 />
               </div>
