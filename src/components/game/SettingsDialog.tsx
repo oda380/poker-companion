@@ -26,7 +26,7 @@ import {
   Pencil,
   Check,
   Spade,
-  Github,
+  // Github, // Removed
   Mail,
   Download,
   Upload,
@@ -443,7 +443,7 @@ export function SettingsDialog() {
 
                 <div className="flex gap-2 pt-4 flex-wrap justify-center">
                   <InstallButton />
-                  <Button variant="outline" size="sm" className="gap-2" asChild>
+                  {/* <Button variant="outline" size="sm" className="gap-2" asChild>
                     <a
                       href={DEVELOPER_INFO.GITHUB_URL}
                       target="_blank"
@@ -452,7 +452,7 @@ export function SettingsDialog() {
                       <Github className="w-4 h-4" />
                       GitHub
                     </a>
-                  </Button>
+                  </Button> */}
                   <Button variant="outline" size="sm" className="gap-2" asChild>
                     <a href={`mailto:${DEVELOPER_INFO.EMAIL}`}>
                       <Mail className="w-4 h-4" />
