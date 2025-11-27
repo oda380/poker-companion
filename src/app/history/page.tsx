@@ -87,7 +87,7 @@ export default function HistoryPage() {
           className="space-y-6"
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 Game History
@@ -96,7 +96,7 @@ export default function HistoryPage() {
                 Review your past poker sessions
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-start md:self-auto">
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export
