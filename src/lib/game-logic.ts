@@ -6,11 +6,47 @@ import {
   Street,
   Action,
   PlayerHandState,
+  Pot,
 } from "../types";
+import { calculatePots } from "./pot-calculator";
 import { createDeck, shuffleDeck, dealCards } from "./deck";
 import { GAME_VARIANTS } from "./constants";
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
+
+// --- Helpers ---
+
+/**
+ * True pot value to display / use for payouts.
+ * If totalCommitted exists, it's the single source of truth.
+ */
+export const getTotalPotValue = (hand: HandState): number => {
+  if (hand.totalCommitted) {
+    return Object.values(hand.totalCommitted).reduce(
+      (sum, amt) => sum + amt,
+      0
+    );
+  }
+  // legacy fallback (should be unused once totalCommitted is fully adopted)
+  const potsTotal = hand.pots.reduce((sum, pot) => sum + pot.amount, 0);
+  const currentStreetTotal = Object.values(hand.perPlayerCommitted).reduce(
+    (sum, amt) => sum + amt,
+    0
+  );
+  return potsTotal + currentStreetTotal;
+};
+
+/**
+ * Still "in the hand" means not sitting out and not folded.
+ * Includes "allIn".
+ */
+const isPlayerInHand = (p: Player): boolean => {
+  return !p.isSittingOut && p.status !== "folded" && p.status !== "sittingOut";
+};
+
+const getEligibleForPot = (players: Player[]): Player[] => {
+  return players.filter((p) => isPlayerInHand(p));
+};
 
 function getNextStreet(
   currentStreet: Street,
@@ -30,7 +66,6 @@ function getNextStreet(
         return "showdown";
     }
   } else {
-    // 5-Card Stud
     switch (currentStreet) {
       case "street1":
         return "street2";
@@ -48,14 +83,14 @@ function getNextStreet(
   }
 }
 
+// --- Main Logic ---
+
 export function initializeHand(
   table: TableState,
   initialDealerSeat?: number
 ): { hand: HandState; updatedPlayers: Player[] } {
   const { players, config, gameVariant } = table;
-  // 1. Determine active players for this hand
-  // Players must have chips >= 1 AND not be sitting out
-  // CRITICAL: Sort by seat to ensure correct turn order and blind assignment
+
   const activePlayers = players
     .filter((p) => p.stack >= 1 && !p.isSittingOut)
     .sort((a, b) => a.seat - b.seat);
@@ -64,163 +99,137 @@ export function initializeHand(
     throw new Error("Not enough players to start a hand");
   }
 
-  // 1. Determine Dealer
+  // Dealer seat
   let dealerSeat = -1;
   if (table.handHistory.length === 0) {
-    // First hand - use provided dealer or random
-    if (initialDealerSeat !== undefined) {
-      dealerSeat = initialDealerSeat;
-    } else {
-      dealerSeat =
-        activePlayers[Math.floor(Math.random() * activePlayers.length)].seat;
-    }
+    dealerSeat =
+      initialDealerSeat !== undefined
+        ? initialDealerSeat
+        : activePlayers[Math.floor(Math.random() * activePlayers.length)].seat;
   } else {
-    // Rotate dealer from last hand
     const lastHand = table.handHistory[table.handHistory.length - 1];
     const lastDealerSeat = lastHand ? lastHand.dealerSeat : -1;
 
     if (lastDealerSeat === -1) {
-      // Fallback if we can't find last dealer
       dealerSeat = activePlayers[0].seat;
     } else {
-      // "Dead Dealer" Logic:
-      // Find the next active player whose seat is strictly greater than the last dealer's seat.
-      // If no such player exists (e.g., last dealer was the highest seat), wrap around to the first active player.
-      const nextDealer = activePlayers.find((p) => p.seat > lastDealerSeat);
-
-      if (nextDealer) {
-        dealerSeat = nextDealer.seat;
-      } else {
-        // Wrap around to the lowest seat
-        dealerSeat = activePlayers[0].seat;
-      }
+      dealerSeat =
+        activePlayers.find((p) => p.seat > lastDealerSeat)?.seat ??
+        activePlayers[0].seat;
     }
   }
 
-  // 2. Deck
   let deck = shuffleDeck(createDeck());
 
-  // 3. Blinds / Antes - track committed amounts AND deduct from stacks
   const perPlayerCommitted: Record<string, number> = {};
+  const totalCommitted: Record<string, number> = {}; // ✅ hand-wide commitments
   let currentBet = 0;
 
-  // Create updated players array with deductions and reset statuses
-  // Create updated players array with deductions and reset statuses
   let updatedPlayers: Player[] = players.map((p) => ({
     ...p,
-    // Reset status to active ONLY if they have chips and weren't sitting out
-    // If they have 0 chips, they remain/become sitting out (or we could add a 'busted' status later)
     status: p.stack > 0 && !p.isSittingOut ? "active" : "sittingOut",
   }));
 
-  // Apply Ante
+  // Ante (dead money)
+  let startingPotAmount = 0;
   if (config.ante && config.ante > 0) {
     activePlayers.forEach((p) => {
       const amount = Math.min(p.stack, config.ante!);
-      perPlayerCommitted[p.id] = amount;
-      // Deduct from stack and check for all-in
+      startingPotAmount += amount;
+      totalCommitted[p.id] = (totalCommitted[p.id] || 0) + amount;
+
       updatedPlayers = updatedPlayers.map((player) => {
-        if (player.id === p.id) {
-          const newStack = player.stack - amount;
-          return {
-            ...player,
-            stack: newStack,
-            status: newStack === 0 ? "allIn" : player.status,
-          };
-        }
-        return player;
+        if (player.id !== p.id) return player;
+        const newStack = player.stack - amount;
+        return {
+          ...player,
+          stack: newStack,
+          status: newStack === 0 ? "allIn" : player.status,
+        };
       });
     });
-    // Set currentBet to ante for Stud games to prevent game from getting stuck
-    if (gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
-      currentBet = config.ante;
-    }
   }
 
-  // Apply Blinds (Hold'em)
+  // Keep starter pot for legacy UI; showdown uses totalCommitted anyway.
+  const pots: Pot[] =
+    startingPotAmount > 0
+      ? [
+          {
+            id: generateId(),
+            amount: startingPotAmount,
+            eligiblePlayerIds: activePlayers.map((p) => p.id),
+          },
+        ]
+      : [];
+
+  if (gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
+    currentBet = 0;
+  }
+
+  // Blinds (Hold'em only)
   if (
     gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id &&
     config.smallBlind &&
     config.bigBlind
   ) {
-    // Find SB and BB positions
     const dealerIndex = activePlayers.findIndex((p) => p.seat === dealerSeat);
-    let sbIndex: number;
-    let bbIndex: number;
-
-    if (activePlayers.length === 2) {
-      // Heads-up: Dealer is SB, Non-Dealer is BB
-      sbIndex = dealerIndex;
-      bbIndex = (dealerIndex + 1) % activePlayers.length;
-    } else {
-      // 3+ Players: Standard (Left of Dealer is SB)
-      sbIndex = (dealerIndex + 1) % activePlayers.length;
-      bbIndex = (dealerIndex + 2) % activePlayers.length;
-    }
+    const sbIndex =
+      activePlayers.length === 2
+        ? dealerIndex
+        : (dealerIndex + 1) % activePlayers.length;
+    const bbIndex = (sbIndex + 1) % activePlayers.length;
 
     const sbPlayer = activePlayers[sbIndex];
     const bbPlayer = activePlayers[bbIndex];
 
-    // Small blind
-    const sbUpdatedPlayer = updatedPlayers.find((p) => p.id === sbPlayer.id);
-    const sbCurrentStack = sbUpdatedPlayer
-      ? sbUpdatedPlayer.stack
-      : sbPlayer.stack;
-    const sbAmount = Math.min(sbCurrentStack, config.smallBlind);
-
+    // SB
+    const sbUpdatedPlayer = updatedPlayers.find((p) => p.id === sbPlayer.id)!;
+    const sbAmount = Math.min(sbUpdatedPlayer.stack, config.smallBlind);
     perPlayerCommitted[sbPlayer.id] =
       (perPlayerCommitted[sbPlayer.id] || 0) + sbAmount;
-    updatedPlayers = updatedPlayers.map((p) => {
-      if (p.id === sbPlayer.id) {
-        const newStack = p.stack - sbAmount;
-        return {
-          ...p,
-          stack: newStack,
-          status: newStack === 0 ? "allIn" : p.status,
-        };
-      }
-      return p;
-    });
+    totalCommitted[sbPlayer.id] = (totalCommitted[sbPlayer.id] || 0) + sbAmount;
 
-    // Big blind
-    const bbUpdatedPlayer = updatedPlayers.find((p) => p.id === bbPlayer.id);
-    const bbCurrentStack = bbUpdatedPlayer
-      ? bbUpdatedPlayer.stack
-      : bbPlayer.stack;
-    const bbAmount = Math.min(bbCurrentStack, config.bigBlind);
+    updatedPlayers = updatedPlayers.map((p) =>
+      p.id === sbPlayer.id
+        ? {
+            ...p,
+            stack: p.stack - sbAmount,
+            status: p.stack - sbAmount === 0 ? "allIn" : p.status,
+          }
+        : p
+    );
 
+    // BB
+    const bbUpdatedPlayer = updatedPlayers.find((p) => p.id === bbPlayer.id)!;
+    const bbAmount = Math.min(bbUpdatedPlayer.stack, config.bigBlind);
     perPlayerCommitted[bbPlayer.id] =
       (perPlayerCommitted[bbPlayer.id] || 0) + bbAmount;
-    updatedPlayers = updatedPlayers.map((p) => {
-      if (p.id === bbPlayer.id) {
-        const newStack = p.stack - bbAmount;
-        return {
-          ...p,
-          stack: newStack,
-          status: newStack === 0 ? "allIn" : p.status,
-        };
-      }
-      return p;
-    });
+    totalCommitted[bbPlayer.id] = (totalCommitted[bbPlayer.id] || 0) + bbAmount;
+
+    updatedPlayers = updatedPlayers.map((p) =>
+      p.id === bbPlayer.id
+        ? {
+            ...p,
+            stack: p.stack - bbAmount,
+            status: p.stack - bbAmount === 0 ? "allIn" : p.status,
+          }
+        : p
+    );
 
     currentBet = config.bigBlind;
   }
 
-  // 4. Deal Cards
+  // Deal
   let playerHands: PlayerHandState[] = [];
-  let firstToAct: string = "";
+  const firstToAct = "WAITING_FOR_DEAL_CONFIRM";
+
   if (gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
-    // Initialize hands with one placeholder hole card (face-down, unknown)
-    // Dealer confirms dealing these without seeing them
     playerHands = activePlayers.map((p) => ({
       playerId: p.id,
-      cards: [{ code: "", faceUp: false }], // Placeholder hole card
+      cards: [{ code: "", faceUp: false }],
     }));
-    // Trigger confirmation dialog after first cards are dealt
-    firstToAct = "WAITING_FOR_DEAL_CONFIRM";
   } else {
-    // Texas Hold'em
-    const cardsToDeal = 2; // Hold'em initial two cards (both down)
+    const cardsToDeal = 2;
     playerHands = activePlayers.map((p) => {
       const { dealt, remaining } = dealCards(deck, cardsToDeal);
       deck = remaining;
@@ -229,8 +238,6 @@ export function initializeHand(
         cards: dealt.map((c) => ({ code: c, faceUp: false })),
       };
     });
-    // Trigger confirmation dialog after dealing hole cards
-    firstToAct = "WAITING_FOR_DEAL_CONFIRM";
   }
 
   const hand: HandState = {
@@ -242,9 +249,10 @@ export function initializeHand(
       gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id ? "preflop" : "street1",
     board: [],
     playerHands,
-    pots: [],
+    pots,
     currentBet,
     perPlayerCommitted,
+    totalCommitted, // ✅
     actions: [],
     activePlayerId: firstToAct,
     finished: false,
@@ -258,7 +266,7 @@ export function initializeHand(
 export function processAction(
   table: TableState,
   actionType: Action["bettingType"],
-  amount?: number
+  amountToTotal?: number
 ): TableState {
   if (!table.currentHand) return table;
 
@@ -270,7 +278,6 @@ export function processAction(
   const activePlayer = table.players.find((p) => p.id === activePlayerId);
   if (!activePlayer) return table;
 
-  // Calculate bet amount
   let newCurrentBet = currentBet;
   const committed = perPlayerCommitted[activePlayerId] || 0;
   let betAmount = 0;
@@ -279,48 +286,51 @@ export function processAction(
   if (actionType === "fold") {
     newStatus = "folded";
   } else if (actionType === "check") {
-    // Can only check if you've already matched the current bet
-    if (committed < currentBet) {
-      return table;
-    }
-    // No bet amount for valid check
+    if (committed < currentBet) return table;
   } else if (actionType === "call") {
     betAmount = Math.min(currentBet - committed, activePlayer.stack);
-    if (betAmount === activePlayer.stack) {
-      newStatus = "allIn";
-    }
+    if (betAmount === activePlayer.stack) newStatus = "allIn";
   } else if (actionType === "bet" || actionType === "raise") {
-    if (!amount) return table;
-    betAmount = Math.min(amount - committed, activePlayer.stack);
-    newCurrentBet = committed + betAmount;
-    if (betAmount === activePlayer.stack) {
-      newStatus = "allIn";
-    }
+    if (!amountToTotal) return table;
+
+    // Must increase your own commitment
+    if (amountToTotal <= committed) return table;
+
+    // Never allow lowering the table bet
+    if (amountToTotal <= currentBet) return table;
+
+    betAmount = Math.min(amountToTotal - committed, activePlayer.stack);
+    const targetTotal = committed + betAmount;
+    newCurrentBet = Math.max(currentBet, targetTotal);
+
+    if (betAmount === activePlayer.stack) newStatus = "allIn";
   } else if (actionType === "allIn") {
     betAmount = activePlayer.stack;
     newCurrentBet = Math.max(newCurrentBet, committed + betAmount);
     newStatus = "allIn";
   }
 
-  // Update players
+  const getEligibleForPot = (players: Player[]): Player[] => {
+    return players.filter(isPlayerInHand);
+  };
+
   const updatedPlayers = table.players.map((p) => {
-    if (p.id === activePlayerId) {
-      return {
-        ...p,
-        stack: p.stack - betAmount,
-        status: newStatus,
-      };
-    }
-    return p;
+    if (p.id !== activePlayerId) return p;
+    return { ...p, stack: p.stack - betAmount, status: newStatus };
   });
 
-  // Update committed amounts
+  // Update committed amounts (both street and hand-wide)
   const newPerPlayerCommitted = {
     ...perPlayerCommitted,
     [activePlayerId]: committed + betAmount,
   };
 
-  // Record action
+  const baseTotalCommitted = hand.totalCommitted ?? {};
+  const newTotalCommitted = {
+    ...baseTotalCommitted,
+    [activePlayerId]: (baseTotalCommitted[activePlayerId] || 0) + betAmount,
+  };
+
   const newAction: Action = {
     id: generateId(),
     playerId: activePlayerId,
@@ -331,27 +341,75 @@ export function processAction(
     createdAt: new Date().toISOString(),
   };
 
-  // Check if hand should end (only one player left)
-  const playersInHand = updatedPlayers.filter(
-    (p) => !p.isSittingOut && p.status !== "folded"
-  );
-
+  // --- Fold win (single remaining) ---
+  const playersInHand = updatedPlayers.filter((p) => isPlayerInHand(p));
   if (playersInHand.length <= 1) {
-    // Hand is over - award pot to remaining player
     const winner = playersInHand[0];
     if (winner) {
-      const totalPot = Object.values(newPerPlayerCommitted).reduce(
-        (sum, amt) => sum + amt,
-        0
+      // IMPORTANT: use UPDATED players for fold status
+      const playersInThisHand = updatedPlayers.filter((p) =>
+        hand.playerHands.some((ph) => ph.playerId === p.id)
       );
+
+      const commitments = playersInThisHand.map((p) => ({
+        playerId: p.id,
+        amount: newTotalCommitted[p.id] || 0,
+        isFolded: p.status === "folded",
+      }));
+
+      const { pots, refunds } = calculatePots(commitments);
+
+      const shares: Record<string, number> = {};
+
+      // Winner takes all pots where eligible (will usually be all of them in fold-win)
+      for (const pot of pots) {
+        if (pot.eligiblePlayerIds.includes(winner.id)) {
+          shares[winner.id] = (shares[winner.id] || 0) + pot.amount;
+        }
+      }
+
+      // Refunds (uncalled bet / all-in overbet / guardrails)
+      for (const [playerId, refundAmount] of Object.entries(
+        refunds as Record<string, number>
+      )) {
+        shares[playerId] = (shares[playerId] || 0) + refundAmount;
+      }
+
+      const sum = (obj: Record<string, number>) =>
+        Object.values(obj).reduce((a, b) => a + b, 0);
+
+      const committedTotal = sum(
+        playersInThisHand.reduce<Record<string, number>>((acc, p) => {
+          acc[p.id] = newTotalCommitted[p.id] || 0;
+          return acc;
+        }, {})
+      );
+
+      // ✅ Dev-only invariant
+      if (process.env.NODE_ENV !== "production") {
+        const sharesTotal = sum(shares);
+        if (sharesTotal !== committedTotal) {
+          console.warn("[FOLD-WIN SHARES INVARIANT FAIL]", {
+            committedTotal,
+            sharesTotal,
+            diff: committedTotal - sharesTotal,
+            shares,
+          });
+        }
+      }
 
       return {
         ...table,
-        players: updatedPlayers.map((p) =>
-          p.id === winner.id
-            ? { ...p, stack: p.stack + totalPot, wins: (p.wins || 0) + 1 }
-            : p
-        ),
+        players: updatedPlayers.map((p) => {
+          const share = shares[p.id] || 0;
+          return share > 0
+            ? {
+                ...p,
+                stack: p.stack + share,
+                wins: p.id === winner.id ? (p.wins || 0) + 1 : p.wins,
+              }
+            : p;
+        }),
         currentHand: undefined,
         handHistory: [
           ...table.handHistory,
@@ -363,11 +421,11 @@ export function processAction(
             winners: [
               {
                 playerId: winner.id,
-                potShare: totalPot,
+                potShare: shares[winner.id] || 0, // ✅ do NOT use committedTotal
                 handDescription: "Won by fold",
               },
             ],
-            totalPot,
+            totalPot: committedTotal, // ✅ the true total money in the hand
             createdAt: new Date().toISOString(),
           },
         ],
@@ -375,34 +433,21 @@ export function processAction(
     }
   }
 
-  // Find next player in rotation
-  // CRITICAL: Sort by seat to ensure correct turn order
+  // --- Next player selection ---
   const allPlayers = updatedPlayers
-    .filter((p) => !p.isSittingOut)
+    .filter(isPlayerInHand)
     .sort((a, b) => a.seat - b.seat);
+
   const currentIndex = allPlayers.findIndex((p) => p.id === activePlayerId);
   let nextIndex = (currentIndex + 1) % allPlayers.length;
   let nextPlayer = allPlayers[nextIndex];
 
-  // Skip folded/all-in/sitting-out players
   let attempts = 0;
-  while (
-    (nextPlayer.status === "folded" ||
-      nextPlayer.status === "allIn" ||
-      nextPlayer.status === "sittingOut" ||
-      nextPlayer.stack === 0) &&
-    attempts < allPlayers.length
-  ) {
+  while (nextPlayer.status !== "active" && attempts < allPlayers.length) {
     nextIndex = (nextIndex + 1) % allPlayers.length;
     nextPlayer = allPlayers[nextIndex];
     attempts++;
   }
-
-  // Check if betting round is complete
-  // Round is complete when:
-  // 1. All active players have committed the same amount, AND
-  // 2. Action has returned to the last aggressor (or everyone has acted if no aggressor)
-  // 3. OR if there are no active players left (everyone all-in or folded)
 
   const activePlayersInRound = updatedPlayers.filter(
     (p) => !p.isSittingOut && p.status === "active"
@@ -412,174 +457,93 @@ export function processAction(
     (p) => (newPerPlayerCommitted[p.id] || 0) === newCurrentBet
   );
 
-  // Get all actions for this street including the current one
   const actionsThisStreet = [...hand.actions, newAction].filter(
     (a) => a.street === hand.currentStreet
   );
   const actedPlayerIds = new Set(actionsThisStreet.map((a) => a.playerId));
-
-  // Check if everyone has acted
-  // Note: Blinds are not recorded as actions, so Preflop BB must act (check/raise) to satisfy this
   const allHaveActed = activePlayersInRound.every((p) =>
     actedPlayerIds.has(p.id)
   );
 
-  // If no active players (everyone all-in), round is complete
-  const roundComplete =
+  let roundComplete =
     activePlayersInRound.length === 0 || (allCommitmentsEqual && allHaveActed);
 
-  // If round is NOT complete but we couldn't find a next player (attempts >= allPlayers.length),
-  // it means everyone is all-in/folded but logic thinks round isn't done.
-  // This shouldn't happen with the fix above, but as a safeguard:
   if (!roundComplete && attempts >= allPlayers.length) {
-    console.warn(
-      "Round not complete but no active players found. Forcing complete."
-    );
-    // This effectively forces the round to complete if we're stuck
+    console.warn("Stuck in player loop - forcing round completion");
+    roundComplete = true;
   }
 
-  let newActivePlayerId = nextPlayer.id;
+  const newActivePlayerId = nextPlayer.id;
 
-  // If betting round is complete, progress to next street or showdown
+  // --- Street end / showdown transition ---
   if (roundComplete) {
-    // Betting round complete - progress to next street or showdown
     const nextStreet = getNextStreet(hand.currentStreet, hand.gameVariant);
 
-    // Calculate pot from this round
+    // Legacy pots tracking (fine to keep); showdown uses totalCommitted anyway
     const roundPot = Object.values(newPerPlayerCommitted).reduce(
       (sum, amt) => sum + amt,
       0
     );
+    const eligiblePlayersForPot = getEligibleForPot(updatedPlayers);
 
-    // Update pots
-    // For MVP, we'll just add to the first pot or create one
     let newPots = [...hand.pots];
     if (newPots.length === 0) {
       newPots = [
         {
           id: generateId(),
           amount: roundPot,
-          eligiblePlayerIds: activePlayersInRound.map((p) => p.id),
+          eligiblePlayerIds: eligiblePlayersForPot.map((p) => p.id),
         },
       ];
     } else {
-      // Add to main pot
-      newPots[0] = {
-        ...newPots[0],
-        amount: newPots[0].amount + roundPot,
+      newPots[0] = { ...newPots[0], amount: newPots[0].amount + roundPot };
+    }
+
+    const activeSurvivors = updatedPlayers.filter(
+      (p) => !p.isSittingOut && p.status === "active"
+    );
+    const jumpToShowdown =
+      activeSurvivors.length === 0 && nextStreet !== "showdown";
+
+    if (nextStreet === "showdown" || jumpToShowdown) {
+      return {
+        ...table,
+        players: updatedPlayers,
+        currentHand: {
+          ...hand,
+          currentStreet: "showdown",
+          actions: [...hand.actions, newAction],
+          pots: newPots,
+          perPlayerCommitted: {}, // ✅ prevent double-counting / stale street money
+          currentBet: 0,
+          activePlayerId: "", // ✅ showdown trigger for UI
+          totalCommitted: newTotalCommitted, // ✅ keep hand-wide commitments
+        },
       };
     }
 
-    if (nextStreet === "showdown") {
-      // Ready for showdown
-      newActivePlayerId = ""; // Empty string indicates showdown phase
-    } else {
-      // Progress to next street
-      if (hand.gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id) {
-        // Hold'em: Deal community cards
-        return {
-          ...table,
-          players: updatedPlayers,
-          currentHand: {
-            ...hand,
-            currentStreet: nextStreet,
-            actions: [...hand.actions, newAction],
-            perPlayerCommitted: {}, // Reset for new street
-            pots: newPots, // Update accumulated pot
-            currentBet: 0, // Reset current bet for new street
-            activePlayerId: "WAITING_FOR_CARDS", // Trigger community card dialog
-          },
-        };
-      } else {
-        // Stud: Deal next card
-        return {
-          ...table,
-          players: updatedPlayers,
-          currentHand: {
-            ...hand,
-            currentStreet: nextStreet,
-            actions: [...hand.actions, newAction],
-            perPlayerCommitted: {}, // Reset for new street
-            pots: newPots, // Update accumulated pot
-            currentBet: 0, // Reset current bet for new street
-            activePlayerId: "WAITING_FOR_STUD_CARD", // Trigger Stud card dialog
-          },
-        };
-      }
-    }
-  } else {
-    // Round NOT Complete
+    const waitingState =
+      hand.gameVariant === GAME_VARIANTS.TEXAS_HOLDEM.id
+        ? "WAITING_FOR_CARDS"
+        : "WAITING_FOR_STUD_CARD";
+
+    return {
+      ...table,
+      players: updatedPlayers,
+      currentHand: {
+        ...hand,
+        currentStreet: nextStreet,
+        actions: [...hand.actions, newAction],
+        perPlayerCommitted: {}, // ✅ new street
+        pots: newPots,
+        currentBet: 0,
+        activePlayerId: waitingState,
+        totalCommitted: newTotalCommitted, // ✅ carry forward
+      },
+    };
   }
-  // The following auto-showdown logic is commented out for MVP
-  /*
-    if (playersWhoNeedToAct.length === 0) {
-        // For MVP, go straight to showdown (skip flop/turn/river for now)
-        // Award pot to player with best hand (or remaining player)
-        const remainingPlayers = updatedPlayers.filter(p =>
-            !p.isSittingOut && p.status !== "folded"
-        );
 
-        if (remainingPlayers.length === 1) {
-            // Only one player left - they win
-            const winner = remainingPlayers[0];
-            const totalPot = Object.values(newPerPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
-
-            return {
-                ...table,
-                players: updatedPlayers.map(p =>
-                    p.id === winner.id ? { ...p, stack: p.stack + totalPot } : p
-                ),
-                currentHand: undefined,
-                handHistory: [
-                    ...table.handHistory,
-                    {
-                        id: generateId(),
-                        handNumber: hand.handNumber,
-                        gameVariant: hand.gameVariant,
-                        dealerSeat: hand.dealerSeat,
-                        winners: [{
-                            playerId: winner.id,
-                            potShare: totalPot,
-                            handDescription: "Won at showdown"
-                        }],
-                        totalPot,
-                        createdAt: new Date().toISOString()
-                    }
-                ]
-            };
-        } else {
-            // Multiple players - for MVP, just award to first remaining player
-            // TODO: Implement proper hand evaluation
-            const winner = remainingPlayers[0];
-            const totalPot = Object.values(newPerPlayerCommitted).reduce((sum, amt) => sum + amt, 0);
-
-            return {
-                ...table,
-                players: updatedPlayers.map(p =>
-                    p.id === winner.id ? { ...p, stack: p.stack + totalPot } : p
-                ),
-                currentHand: undefined,
-                handHistory: [
-                    ...table.handHistory,
-                    {
-                        id: generateId(),
-                        handNumber: hand.handNumber,
-                        gameVariant: hand.gameVariant,
-                        dealerSeat: hand.dealerSeat,
-                        winners: [{
-                            playerId: winner.id,
-                            potShare: totalPot,
-                            handDescription: "Won at showdown (MVP - no hand eval yet)"
-                        }],
-                        totalPot,
-                        createdAt: new Date().toISOString()
-                    }
-                ]
-            };
-        }
-    }
-    */
-
+  // --- Normal continuation (same street) ---
   return {
     ...table,
     players: updatedPlayers,
@@ -589,6 +553,7 @@ export function processAction(
       perPlayerCommitted: newPerPlayerCommitted,
       actions: [...hand.actions, newAction],
       activePlayerId: newActivePlayerId,
+      totalCommitted: newTotalCommitted, // ✅ carry forward
     },
   };
 }

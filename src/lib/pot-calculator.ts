@@ -1,70 +1,110 @@
-import { Pot } from "../types";
-
-interface PlayerCommitment {
-    playerId: string;
-    amount: number;
-    isFolded: boolean;
+export interface PlayerCommitment {
+  playerId: string;
+  amount: number;
+  isFolded: boolean;
 }
 
-export function calculatePots(commitments: PlayerCommitment[]): Pot[] {
-    const pots: Pot[] = [];
+export interface Pot {
+  id: string;
+  amount: number;
+  eligiblePlayerIds: string[];
+}
 
-    // Filter out players with 0 commitment if they are folded? 
-    // Actually, even folded players contributed to the pot.
-    // We need to know who is eligible for which pot.
-    // Folded players are NOT eligible for any pot they contributed to (they forfeited it).
-    // But their money stays in the pot.
+/**
+ * Calculate pots from player commitments, handling side pots and refunds.
+ *
+ * @param commitments - Array of player commitments (total for the hand)
+ * @returns Object containing pots array and refunds map
+ */
+export function calculatePots(commitments: PlayerCommitment[]): {
+  pots: Pot[];
+  refunds: Record<string, number>;
+} {
+  const pots: Pot[] = [];
+  const refunds: Record<string, number> = {};
 
-    // 1. Sort unique contribution levels
-    const levels = Array.from(new Set(commitments.map(c => c.amount)))
-        .filter(amount => amount > 0)
-        .sort((a, b) => a - b);
+  const levels = Array.from(new Set(commitments.map((c) => c.amount)))
+    .filter((amount) => amount > 0)
+    .sort((a, b) => a - b);
 
-    if (levels.length === 0) return [];
+  if (levels.length === 0) return { pots: [], refunds: {} };
 
-    let previousLevel = 0;
+  let previousLevel = 0;
 
-    for (const level of levels) {
-        const potAmount = commitments.reduce((sum, player) => {
-            const contribution = Math.max(0, Math.min(player.amount, level) - previousLevel);
-            return sum + contribution;
-        }, 0);
+  for (const level of levels) {
+    const sliceAmount = commitments.reduce((sum, player) => {
+      const contribution = Math.max(
+        0,
+        Math.min(player.amount, level) - previousLevel
+      );
+      return sum + contribution;
+    }, 0);
 
-        if (potAmount > 0) {
-            // Who is eligible?
-            // Players who have committed at least this level AND are not folded.
-            const eligiblePlayerIds = commitments
-                .filter(p => p.amount >= level && !p.isFolded)
-                .map(p => p.playerId);
-
-            // If only one player is eligible (everyone else folded or all-in for less), 
-            // and there are no other active players... wait.
-            // Side pot logic:
-            // If everyone else is all-in for less, this player effectively wins this portion immediately?
-            // Or it's returned?
-            // Standard rule: If a player bets and no one calls (everyone else is all-in for less), 
-            // the excess is returned.
-            // BUT, here we are calculating pots based on committed amounts.
-            // If a player committed 500, and everyone else max committed 100.
-            // Level 100: Main pot.
-            // Level 500: Side pot.
-            // The side pot (100 to 500) only has 1 eligible player.
-            // That player gets that money back immediately (unless there are other active players who just haven't acted yet? 
-            // No, this function assumes the betting round is over or we are recalculating based on current state).
-
-            // For display purposes, we might show it as a pot, but logically it's a refund if only 1 eligible.
-            // However, the prompt says "Any excess ... is returned/refunded immediately before showdown."
-            // We will return it as a Pot for now, and the game logic can handle the refund if eligible.length === 1.
-
-            pots.push({
-                id: `pot-${level}`,
-                amount: potAmount,
-                eligiblePlayerIds,
-            });
-        }
-
-        previousLevel = level;
+    if (sliceAmount <= 0) {
+      previousLevel = level;
+      continue;
     }
 
-    return pots;
+    // Players who contributed to THIS slice (with your levels approach, this is amount >= level)
+    const contributors = commitments
+      .filter((p) => p.amount >= level)
+      .sort((a, b) => a.playerId.localeCompare(b.playerId));
+
+    // Eligible = contributors who haven't folded
+    const eligiblePlayerIds = contributors
+      .filter((p) => !p.isFolded)
+      .map((p) => p.playerId);
+
+    // 0 eligible => refund deterministically to contributors
+    if (eligiblePlayerIds.length === 0) {
+      const n = contributors.length;
+      if (n === 0) {
+        previousLevel = level;
+        continue;
+      }
+
+      const base = Math.floor(sliceAmount / n);
+      let rem = sliceAmount % n;
+
+      for (const c of contributors) {
+        const extra = rem > 0 ? 1 : 0;
+        rem = Math.max(0, rem - 1);
+        refunds[c.playerId] = (refunds[c.playerId] || 0) + base + extra;
+      }
+
+      previousLevel = level;
+      continue;
+    }
+
+    // ✅ Option B
+    if (eligiblePlayerIds.length === 1) {
+      const only = eligiblePlayerIds[0];
+
+      // True refund only if ONLY that player contributed to this slice (uncalled overbet)
+      if (contributors.length === 1) {
+        refunds[only] = (refunds[only] || 0) + sliceAmount;
+      } else {
+        // Uncontested side pot (others contributed but folded) => award as a pot (counts as win)
+        pots.push({
+          id: `pot-${level}-${previousLevel}`,
+          amount: sliceAmount,
+          eligiblePlayerIds, // [only]
+        });
+      }
+
+      previousLevel = level;
+      continue;
+    }
+
+    // Normal contested pot
+    pots.push({
+      id: `pot-${level}-${previousLevel}`,
+      amount: sliceAmount,
+      eligiblePlayerIds,
+    });
+
+    previousLevel = level;
+  }
+
+  return { pots, refunds };
 }

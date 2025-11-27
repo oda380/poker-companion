@@ -84,7 +84,8 @@ export interface HandState {
   playerHands: PlayerHandState[];
   pots: Pot[];
   currentBet: number;
-  perPlayerCommitted: Record<string, number>;
+  perPlayerCommitted: Record<string, number>; // Current street only
+  totalCommitted: Record<string, number>; // Hand-wide total (for side pots)
   actions: Action[];
   activePlayerId?: string;
   finished: boolean;
@@ -105,6 +106,14 @@ export interface HandSummary {
   }[];
   foldedPlayers?: string[]; // Array of player IDs who folded
   totalPot: number;
+  // Optional: for debugging/replay
+  potResults?: Array<{
+    potId: string;
+    potAmount: number;
+    winners: Array<{ playerId: string; handDescription: string }>;
+    eligiblePlayerIds: string[];
+  }>;
+  refunds?: Record<string, number>;
   createdAt: string;
 }
 

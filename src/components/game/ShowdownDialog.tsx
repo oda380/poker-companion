@@ -1,6 +1,7 @@
 "use client";
 
 import { usePokerStore } from "@/store/usePokerStore";
+import { applyPayoutsToPlayers } from "@/lib/payout-calculator";
 import {
   Dialog,
   DialogContent,
@@ -9,21 +10,119 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
-import { useState, useEffect } from "react";
-import { evaluateWinners } from "@/lib/hand-evaluator";
+import { useState, useEffect, useMemo } from "react";
+import { evaluateShowdown } from "@/lib/hand-evaluator";
 import { Trophy, Check, Eye } from "lucide-react";
 import { Card } from "./Card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getStreetColor } from "@/lib/utils";
+import { GAME_VARIANTS } from "@/lib/constants";
+import { getTotalPotValue } from "@/lib/game-logic";
 
 interface EvaluationResult {
-  winners: Array<{ playerId: string; handDescription: string }>;
+  potResults: Array<{
+    potId: string;
+    potAmount: number;
+    winners: Array<{ playerId: string; handDescription: string }>;
+    eligiblePlayerIds: string[];
+  }>;
   allHands: Record<string, { cards: string[]; handDescription: string }>;
+  refunds: Record<string, number>;
+}
+
+function buildSeatRing(
+  playersInHand: Array<{ id: string; seat: number }>,
+  dealerSeat: number
+) {
+  const sorted = [...playersInHand].sort((a, b) => a.seat - b.seat);
+  const dealerIdx = sorted.findIndex((p) => p.seat === dealerSeat);
+
+  // Ring order starts at the first seat clockwise AFTER dealer.
+  if (dealerIdx >= 0) {
+    return [...sorted.slice(dealerIdx + 1), ...sorted.slice(0, dealerIdx + 1)];
+  }
+  // Fallback: dealer not found (should be rare) -> just use sorted order
+  return sorted;
+}
+
+/**
+ * Apply refunds to shares map (used in both uiShares and handleConfirmResults)
+ * to ensure they stay in sync.
+ *
+ * Pure function - returns a new object, safe for useMemo.
+ */
+function applyRefundsToShares(
+  shares: Record<string, number>,
+  refunds: Record<string, number>
+): Record<string, number> {
+  const next = { ...shares };
+  for (const [playerId, amt] of Object.entries(refunds)) {
+    next[playerId] = (next[playerId] || 0) + amt;
+  }
+  return next;
+}
+
+function calculateWinnerSharesFromPotResults(args: {
+  potResults: EvaluationResult["potResults"];
+  players: Array<{ id: string; seat: number }>;
+  dealerSeat: number;
+}): Record<string, number> {
+  const { potResults, players, dealerSeat } = args;
+
+  const shares: Record<string, number> = {};
+
+  for (const potResult of potResults) {
+    const eligiblePlayers = players.filter((p) =>
+      potResult.eligiblePlayerIds.includes(p.id)
+    );
+
+    const ring = buildSeatRing(
+      eligiblePlayers.map((p) => ({ id: p.id, seat: p.seat })),
+      dealerSeat
+    );
+
+    const pos = new Map<string, number>();
+    ring.forEach((p, idx) => pos.set(p.id, idx));
+
+    const winnersSorted = [...potResult.winners].sort(
+      (a, b) =>
+        (pos.get(a.playerId) ?? Number.MAX_SAFE_INTEGER) -
+        (pos.get(b.playerId) ?? Number.MAX_SAFE_INTEGER)
+    );
+
+    const n = Math.max(1, winnersSorted.length);
+    const base = Math.floor(potResult.potAmount / n);
+    const rem = potResult.potAmount % n;
+
+    winnersSorted.forEach((w, i) => {
+      const potShare = base + (i < rem ? 1 : 0);
+      shares[w.playerId] = (shares[w.playerId] || 0) + potShare;
+    });
+  }
+
+  return shares;
+}
+
+/** ✅ Single source of truth: winners shares + refunds */
+function calculateFinalShares(args: {
+  potResults: EvaluationResult["potResults"];
+  refunds: EvaluationResult["refunds"];
+  players: Array<{ id: string; seat: number }>;
+  dealerSeat: number;
+}): Record<string, number> {
+  const baseShares = calculateWinnerSharesFromPotResults({
+    potResults: args.potResults,
+    players: args.players,
+    dealerSeat: args.dealerSeat,
+  });
+
+  return applyRefundsToShares(baseShares, args.refunds);
 }
 
 export function ShowdownDialog() {
   const currentHand = usePokerStore((state) => state.currentHand);
   const players = usePokerStore((state) => state.players);
+
   const [playerHands, setPlayerHands] = useState<Record<string, string[]>>({});
   const [currentInputPlayer, setCurrentInputPlayer] = useState<string | null>(
     null
@@ -34,22 +133,57 @@ export function ShowdownDialog() {
   const [activeSlot, setActiveSlot] = useState(0);
   const [isReviewing, setIsReviewing] = useState(false);
 
-  // Only show if hand is in showdown phase (no active player)
   const isShowdown = currentHand && currentHand.activePlayerId === "";
-
   const isShowdownDialogOpen = usePokerStore(
     (state) => state.ui.isShowdownDialogOpen
   );
   const setUiState = usePokerStore((state) => state.setUiState);
 
-  // Sync isOpen with isShowdown
   useEffect(() => {
-    if (isShowdown) {
-      setUiState({ isShowdownDialogOpen: true });
-    }
+    if (isShowdown) setUiState({ isShowdownDialogOpen: true });
   }, [isShowdown, setUiState]);
 
-  if (!isShowdown) return null;
+  // SAFE: can be computed even when currentHand is undefined
+  const isStud = currentHand?.gameVariant === GAME_VARIANTS.FIVE_CARD_STUD.id;
+
+  const getRequiredCardsForPlayer = (playerId: string) => {
+    if (!currentHand) return isStud ? 1 : 2;
+    if (!isStud) return 2;
+
+    const handState = currentHand.playerHands.find(
+      (ph) => ph.playerId === playerId
+    );
+    if (!handState) return 1;
+
+    const missingDown = handState.cards.filter(
+      (c) => !c.faceUp && !c.code
+    ).length;
+
+    return Math.max(0, missingDown);
+  };
+
+  // ✅ Hook must be unconditional (called every render before any return)
+  const requiredCardsForCurrent = useMemo(() => {
+    if (!currentInputPlayer) return isStud ? 1 : 2;
+    return getRequiredCardsForPlayer(currentInputPlayer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentInputPlayer, isStud, currentHand?.id, currentHand?.playerHands]);
+
+  // ✅ Compute shares for UI display with useMemo (matches confirm payout exactly)
+  const dealerSeat = currentHand?.dealerSeat;
+  const uiShares = useMemo(() => {
+    if (!evaluationResult || dealerSeat === undefined) return null;
+
+    return calculateFinalShares({
+      potResults: evaluationResult.potResults,
+      refunds: evaluationResult.refunds,
+      players,
+      dealerSeat,
+    });
+  }, [evaluationResult, players, dealerSeat]);
+
+  // Early return AFTER hooks
+  if (!isShowdown || !currentHand) return null;
 
   const remainingPlayers = players.filter(
     (p) =>
@@ -58,126 +192,211 @@ export function ShowdownDialog() {
       currentHand.playerHands.some((ph) => ph.playerId === p.id)
   );
 
-  const totalPot =
-    (currentHand.pots?.reduce((sum, pot) => sum + pot.amount, 0) || 0) +
-    Object.values(currentHand.perPlayerCommitted).reduce(
-      (sum, amt) => sum + amt,
-      0
-    );
+  const totalPot = getTotalPotValue(currentHand);
 
-  // For Stud, extract face-up cards and check if hole cards need input
-  const isStud = currentHand.gameVariant === "fiveCardStud";
-
-  // Check if we're still inputting hands
   const playersNeedingInput = remainingPlayers.filter((p) => {
-    const hand = playerHands[p.id];
-    if (isStud) {
-      return !hand || hand.length < 1;
-    } else {
-      return !hand || hand.length < 2;
-    }
+    const required = getRequiredCardsForPlayer(p.id);
+    const entered = playerHands[p.id]?.filter(Boolean).length || 0;
+    return entered < required;
   });
   const needsInput = playersNeedingInput.length > 0;
 
   const handleCardSelect = (cardCode: string) => {
-    const maxCards = isStud ? 1 : 2;
-    const newCards = [...selectedCards];
+    if (!currentInputPlayer) return;
 
-    // Ensure array is big enough (fill with empty strings if needed)
+    const maxCards = requiredCardsForCurrent;
+    if (maxCards <= 0) return;
+
+    const newCards = [...selectedCards];
     while (newCards.length < maxCards) newCards.push("");
 
     newCards[activeSlot] = cardCode;
     setSelectedCards(newCards);
 
-    // Auto-advance if not last slot
-    if (activeSlot < maxCards - 1) {
-      setActiveSlot(activeSlot + 1);
-    }
+    if (activeSlot < maxCards - 1) setActiveSlot(activeSlot + 1);
   };
 
   const handleConfirmHand = () => {
-    const requiredCards = isStud ? 1 : 2;
-    // Check if all slots are filled (no empty strings)
-    const filledCards = selectedCards.filter((c) => c !== "");
-    if (currentInputPlayer && filledCards.length === requiredCards) {
+    const required = requiredCardsForCurrent;
+    const filled = selectedCards.filter((c) => c !== "");
+
+    if (currentInputPlayer && (required === 0 || filled.length === required)) {
       setPlayerHands({
         ...playerHands,
-        [currentInputPlayer]: filledCards,
+        [currentInputPlayer]: filled,
       });
       setSelectedCards([]);
       setCurrentInputPlayer(null);
+      setActiveSlot(0);
     }
   };
 
   const handleStartInput = (playerId: string) => {
     setCurrentInputPlayer(playerId);
-    // Pre-fill existing cards if player already has a hand
-    const existingHand = playerHands[playerId];
-    if (existingHand && existingHand.length > 0) {
-      setSelectedCards(existingHand);
-    } else {
-      setSelectedCards([]);
-    }
+    const existing = playerHands[playerId];
+    setSelectedCards(existing && existing.length > 0 ? existing : []);
     setActiveSlot(0);
   };
 
-  const handleEvaluate = () => {
-    if (!currentHand) return;
-
+  const handleEvaluate = async () => {
     try {
-      // For Stud, combine hole cards (from input) with face-up cards (from hand state)
-      let fullPlayerHands = { ...playerHands };
-      if (isStud) {
-        fullPlayerHands = {};
-        Object.entries(playerHands).forEach(([playerId, holeCards]) => {
-          // Get face-up cards from current hand
-          const playerHandState = currentHand.playerHands.find(
-            (ph) => ph.playerId === playerId
-          );
-          const faceUpCards =
-            playerHandState?.cards
-              .filter((c) => c.faceUp && c.code)
-              .map((c) => c.code) || [];
-
-          // Combine: hole card(s) + face-up cards
-          const combined = [...holeCards, ...faceUpCards];
-
-          // Validate: Stud hands should have cards (usually 5, but at least some)
-          if (combined.length === 0) {
-            console.warn(`Player ${playerId} has no cards to evaluate`);
-          }
-
-          fullPlayerHands[playerId] = combined;
-        });
+      if (!isStud && currentHand.board.length !== 5) {
+        alert("Please deal all 5 community cards (runout) before evaluating.");
+        return;
       }
 
-      // Evaluate winners using poker-evaluator
-      const winners = evaluateWinners(fullPlayerHands, currentHand.board);
+      const fullPlayerHands: Record<string, string[]> = {};
 
-      if (!winners || winners.length === 0) {
-        // If evaluation failed (returned empty), show error
+      for (const p of remainingPlayers) {
+        const pid = p.id;
+        const required = getRequiredCardsForPlayer(pid);
+        const entered = playerHands[pid]?.filter(Boolean).length || 0;
+
+        if (entered < required) {
+          alert("Please enter all required hole cards before evaluating.");
+          return;
+        }
+
+        const handState = currentHand.playerHands.find(
+          (ph) => ph.playerId === pid
+        );
+
+        const faceUp =
+          handState?.cards
+            .filter((c) => c.faceUp && c.code)
+            .map((c) => c.code) || [];
+
+        const knownDown =
+          handState?.cards
+            .filter((c) => !c.faceUp && c.code)
+            .map((c) => c.code) || [];
+
+        const inputDown = playerHands[pid] || [];
+
+        const combined = isStud
+          ? [...knownDown, ...inputDown, ...faceUp]
+          : inputDown;
+
+        if (isStud && combined.length !== 5) {
+          alert(
+            "Stud hands must have exactly 5 cards at showdown. Please check input/reveals."
+          );
+          return;
+        }
+        if (!isStud && combined.length !== 2) {
+          alert("Hold'em hands must have exactly 2 hole cards entered.");
+          return;
+        }
+
+        fullPlayerHands[pid] = combined;
+      }
+
+      const board = isStud ? [] : currentHand.board;
+
+      const { calculatePots } = await import("@/lib/pot-calculator");
+
+      const totalCommitted = currentHand.totalCommitted ?? {};
+
+      const playersInThisHand = players.filter((p) =>
+        currentHand.playerHands.some((ph) => ph.playerId === p.id)
+      );
+
+      const commitments = playersInThisHand.map((p) => ({
+        playerId: p.id,
+        amount: totalCommitted[p.id] || 0,
+        isFolded: p.status === "folded",
+      }));
+
+      const { pots, refunds } = calculatePots(commitments);
+
+      if (process.env.NODE_ENV !== "production") {
+        const sum = (obj: Record<string, number>) =>
+          Object.values(obj).reduce((a, b) => a + b, 0);
+
+        const committedTotal = sum(totalCommitted);
+        const potsTotal = pots.reduce((s, p) => s + p.amount, 0);
+        const refundsTotal = sum(refunds);
+
+        if (potsTotal + refundsTotal !== committedTotal) {
+          console.warn("[POTS INVARIANT FAIL]", {
+            committedTotal,
+            potsTotal,
+            refundsTotal,
+            diff: committedTotal - (potsTotal + refundsTotal),
+          });
+        }
+      }
+
+      const potResults: EvaluationResult["potResults"] = [];
+
+      if (pots.length === 0 && Object.keys(refunds).length > 0) {
+        console.warn("[SHOWDOWN] No contested pots; applying refunds only.", {
+          refunds,
+        });
+        setEvaluationResult({ potResults: [], allHands: {}, refunds });
+        return;
+      } else if (pots.length === 0 && Object.keys(refunds).length === 0) {
         alert(
-          "Error evaluating hands. Please check that all cards are entered correctly."
+          "No pots or refunds to distribute. Hand might be empty or misconfigured."
         );
         return;
       }
 
-      // Store all hands with descriptions for display
-      const allHands: Record<
-        string,
-        { cards: string[]; handDescription: string }
-      > = {};
-      Object.entries(fullPlayerHands).forEach(([playerId, cards]) => {
-        const winner = winners.find((w) => w.playerId === playerId);
-        allHands[playerId] = {
-          cards,
-          handDescription: winner?.handDescription || "Lost",
-        };
-        // Reveal hand on table
-        usePokerStore.getState().revealHand(playerId, cards);
+      for (const pot of pots) {
+        const eligibleHands: Record<string, string[]> = {};
+
+        for (const playerId of pot.eligiblePlayerIds) {
+          if (fullPlayerHands[playerId]) {
+            eligibleHands[playerId] = fullPlayerHands[playerId];
+          }
+        }
+
+        if (Object.keys(eligibleHands).length === 0) continue;
+
+        if (Object.keys(eligibleHands).length === 1) {
+          const [playerId] = Object.keys(eligibleHands);
+          potResults.push({
+            potId: pot.id,
+            potAmount: pot.amount,
+            winners: [{ playerId, handDescription: "Won uncontested" }],
+            eligiblePlayerIds: pot.eligiblePlayerIds,
+          });
+          continue;
+        }
+
+        const { winners } = evaluateShowdown(eligibleHands, board, {
+          requireFiveCardBoard: !isStud,
+        });
+
+        if (!winners.length) {
+          alert(
+            `Error evaluating pot ${pot.id}. Please check the entered cards.`
+          );
+          return;
+        }
+
+        potResults.push({
+          potId: pot.id,
+          potAmount: pot.amount,
+          winners,
+          eligiblePlayerIds: pot.eligiblePlayerIds,
+        });
+      }
+
+      const { allHandsByPlayerId } = evaluateShowdown(fullPlayerHands, board, {
+        requireFiveCardBoard: !isStud,
       });
 
-      setEvaluationResult({ winners, allHands });
+      const allHands: EvaluationResult["allHands"] = {};
+      for (const [pid, info] of Object.entries(allHandsByPlayerId)) {
+        allHands[pid] = {
+          cards: info.cards,
+          handDescription: info.handDescription,
+        };
+        usePokerStore.getState().revealHand(pid, info.cards);
+      }
+
+      setEvaluationResult({ potResults, allHands, refunds });
     } catch (e) {
       console.error("Handle evaluate error:", e);
       alert("An unexpected error occurred during evaluation.");
@@ -185,37 +404,42 @@ export function ShowdownDialog() {
   };
 
   const handleConfirmResults = () => {
-    if (!currentHand || !evaluationResult) return;
+    if (!evaluationResult) return;
 
-    // Calculate total pot
-    const totalPot =
-      (currentHand.pots?.reduce((sum, pot) => sum + pot.amount, 0) || 0) +
-      Object.values(currentHand.perPlayerCommitted).reduce(
-        (sum, amt) => sum + amt,
-        0
-      );
+    const finalShares = calculateFinalShares({
+      potResults: evaluationResult.potResults,
+      refunds: evaluationResult.refunds,
+      players,
+      dealerSeat: currentHand.dealerSeat,
+    });
 
-    // Award pot to winners
-    const potPerWinner = Math.floor(totalPot / evaluationResult.winners.length);
+    const allWinners = Array.from(
+      new Set(
+        evaluationResult.potResults.flatMap((pr) =>
+          pr.winners.map((w) => w.playerId)
+        )
+      )
+    );
 
-    // Identify folded players (players in the hand who didn't reach showdown)
-    const playersInHand = players.filter((p) =>
+    const playersInThisHand = players.filter((p) =>
       currentHand.playerHands.some((ph) => ph.playerId === p.id)
     );
-    const playersAtShowdown = Object.keys(evaluationResult.allHands);
-    const foldedPlayers = playersInHand
-      .filter((p) => !playersAtShowdown.includes(p.id))
+    const foldedPlayers = playersInThisHand
+      .filter((p) => p.status === "folded")
       .map((p) => p.id);
+
+    const totalPot = getTotalPotValue(currentHand);
 
     const summary = {
       id: Math.random().toString(36).substring(2, 15),
       handNumber: currentHand.handNumber,
       gameVariant: currentHand.gameVariant,
       dealerSeat: currentHand.dealerSeat,
-      winners: evaluationResult.winners.map((w) => ({
-        playerId: w.playerId,
-        potShare: potPerWinner,
-        handDescription: w.handDescription,
+      winners: allWinners.map((playerId) => ({
+        playerId,
+        potShare: finalShares[playerId] || 0,
+        handDescription:
+          evaluationResult.allHands[playerId]?.handDescription || "",
       })),
       playerHands: Object.entries(evaluationResult.allHands).map(
         ([playerId, info]) => ({
@@ -224,55 +448,44 @@ export function ShowdownDialog() {
           handDescription: info.handDescription,
         })
       ),
-      foldedPlayers, // Add folded players
+      foldedPlayers,
       totalPot,
+      potResults: evaluationResult.potResults,
+      refunds: evaluationResult.refunds,
       createdAt: new Date().toISOString(),
     };
 
-    // Save to DB before clearing state
     import("@/lib/db").then(({ saveHand }) => {
       saveHand(usePokerStore.getState().id, currentHand, summary);
     });
 
     usePokerStore.setState((state) => ({
       ...state,
-      players: state.players.map((p) => {
-        const winner = evaluationResult.winners.find(
-          (w) => w.playerId === p.id
-        );
-        return winner
-          ? { ...p, stack: p.stack + potPerWinner, wins: (p.wins || 0) + 1 }
-          : p;
-      }),
+      players: applyPayoutsToPlayers(state.players, finalShares, allWinners),
       currentHand: undefined,
       handHistory: [...state.handHistory, summary],
     }));
 
-    // Reset state
     setPlayerHands({});
     setEvaluationResult(null);
   };
 
   const handleClose = (open: boolean) => {
-    if (open) return; // Only handle closing
+    if (open) return;
 
     if (currentInputPlayer) {
-      // If inputting a hand, go back to player list
       setCurrentInputPlayer(null);
       setSelectedCards([]);
     } else if (isReviewing) {
-      // If reviewing, go back to "All Set" view (if all valid)
       setIsReviewing(false);
     } else {
-      // Otherwise, close dialog (undo)
       usePokerStore.temporal.getState().undo();
     }
     setUiState({ isShowdownDialogOpen: false });
   };
 
-  // Helper to check if hand is complete
   const isHandComplete =
-    selectedCards.filter((c) => c !== "").length === (isStud ? 1 : 2);
+    selectedCards.filter((c) => c !== "").length === requiredCardsForCurrent;
 
   return (
     <Dialog
@@ -301,6 +514,7 @@ export function ShowdownDialog() {
             )}
           </DialogTitle>
         </DialogHeader>
+
         <div className="space-y-4">
           {!evaluationResult && !currentInputPlayer && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
@@ -311,18 +525,18 @@ export function ShowdownDialog() {
                 </div>
                 <div className="text-amber-800/80 dark:text-amber-200/80">
                   {isStud
-                    ? "Input the final face-down hole card for each player to determine the winner."
+                    ? "Input the missing face-down card(s) for each player to determine the winner."
                     : "Input the hole cards for each active player."}
                 </div>
               </div>
             </div>
           )}
+
           <div className="text-center">
             <div className="text-sm text-muted-foreground">Total Pot</div>
             <div className="text-4xl font-bold text-primary">{totalPot}</div>
           </div>
 
-          {/* Board Cards */}
           {currentHand.board.length > 0 && (
             <div className="flex justify-center gap-2 p-4 bg-muted/30 rounded">
               {currentHand.board.map((card, i) => (
@@ -332,20 +546,26 @@ export function ShowdownDialog() {
           )}
 
           {evaluationResult ? (
-            /* Results Screen */
             <div className="space-y-6">
               <AnimatePresence>
-                {evaluationResult.winners.map((winner, idx) => {
-                  const player = players.find((p) => p.id === winner.playerId);
-                  const handInfo = evaluationResult.allHands[winner.playerId];
+                {Array.from(
+                  new Set(
+                    evaluationResult.potResults.flatMap((pr) =>
+                      pr.winners.map((w) => w.playerId)
+                    )
+                  )
+                ).map((playerId, idx) => {
+                  const player = players.find((p) => p.id === playerId);
+                  const handInfo = evaluationResult.allHands[playerId];
+                  const winChips = uiShares?.[playerId] ?? 0;
 
                   return (
                     <motion.div
-                      key={idx}
+                      key={playerId}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.2 }}
-                      className="p-6 rounded-xl bg-gradient-to-br from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/30 relative overflow-hidden"
+                      className="p-6 rounded-xl bg-linear-to-br from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/30 relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-10">
                         <Trophy className="w-24 h-24" />
@@ -363,7 +583,7 @@ export function ShowdownDialog() {
                           {player?.name || "Unknown"}
                         </div>
                         <div className="text-xl text-muted-foreground mb-4">
-                          {winner.handDescription}
+                          {handInfo?.handDescription || ""}
                         </div>
 
                         <div className="flex gap-2 mb-4">
@@ -380,9 +600,7 @@ export function ShowdownDialog() {
                         <div className="text-lg font-medium">
                           Wins{" "}
                           <span className="text-primary font-bold">
-                            {Math.floor(
-                              totalPot / evaluationResult.winners.length
-                            )}
+                            {winChips}
                           </span>{" "}
                           chips
                         </div>
@@ -400,7 +618,6 @@ export function ShowdownDialog() {
               </Button>
             </div>
           ) : needsInput || isReviewing ? (
-            /* Hand Input Screen */
             <AnimatePresence mode="wait">
               {currentInputPlayer ? (
                 <motion.div
@@ -420,9 +637,7 @@ export function ShowdownDialog() {
                       </div>
                     </div>
 
-                    {/* Card Display Area - Responsive Layout */}
                     <div className="flex flex-col md:flex-row justify-center gap-4 mt-4 items-center">
-                      {/* Face-up cards for Stud - Always in a row */}
                       {isStud && (
                         <div className="flex gap-3 justify-center">
                           {currentHand.playerHands
@@ -443,43 +658,47 @@ export function ShowdownDialog() {
                         </div>
                       )}
 
-                      {/* Input Slots for Hole Card(s) */}
                       <div className="flex gap-4 justify-center min-h-[120px] items-center">
-                        {Array.from({ length: isStud ? 1 : 2 }).map((_, i) => {
-                          const card = selectedCards[i];
-                          const isActive = i === activeSlot;
+                        {Array.from({ length: requiredCardsForCurrent }).map(
+                          (_, i) => {
+                            const card = selectedCards[i];
+                            const isActive = i === activeSlot;
 
-                          return (
-                            <motion.div
-                              key={i}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => setActiveSlot(i)}
-                              className={`relative cursor-pointer rounded-xl transition-all ${
-                                isActive
-                                  ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
-                                  : "hover:ring-2 hover:ring-primary/50"
-                              }`}
-                            >
-                              {card ? (
-                                <Card code={card} faceUp={true} size="large" />
-                              ) : (
-                                <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center">
-                                  <span className="text-xs text-muted-foreground font-medium">
-                                    {isStud ? "Hole Card" : `Card ${i + 1}`}
-                                  </span>
-                                </div>
-                              )}
+                            return (
+                              <motion.div
+                                key={i}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setActiveSlot(i)}
+                                className={`relative cursor-pointer rounded-xl transition-all ${
+                                  isActive
+                                    ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
+                                    : "hover:ring-2 hover:ring-primary/50"
+                                }`}
+                              >
+                                {card ? (
+                                  <Card
+                                    code={card}
+                                    faceUp={true}
+                                    size="large"
+                                  />
+                                ) : (
+                                  <div className="w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center">
+                                    <span className="text-xs text-muted-foreground font-medium">
+                                      {isStud ? "Hole Card" : `Card ${i + 1}`}
+                                    </span>
+                                  </div>
+                                )}
 
-                              {/* Active Indicator */}
-                              {isActive && (
-                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
-                                  EDITING
-                                </div>
-                              )}
-                            </motion.div>
-                          );
-                        })}
+                                {isActive && (
+                                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-primary font-bold text-xs animate-bounce">
+                                    EDITING
+                                  </div>
+                                )}
+                              </motion.div>
+                            );
+                          }
+                        )}
                       </div>
                     </div>
                   </div>
@@ -489,11 +708,8 @@ export function ShowdownDialog() {
                       onCardSelect={handleCardSelect}
                       usedCards={[
                         ...currentHand.board,
-                        // Include all face-up cards from all players to prevent duplicates
                         ...currentHand.playerHands.flatMap((ph) =>
-                          ph.cards
-                            .filter((c) => c.faceUp && c.code)
-                            .map((c) => c.code)
+                          ph.cards.filter((c) => !!c.code).map((c) => c.code)
                         ),
                         ...Object.values(playerHands).flat(),
                         ...selectedCards.filter((c) => c !== ""),
@@ -505,7 +721,7 @@ export function ShowdownDialog() {
                     <Button
                       className="w-full h-12 text-lg font-bold"
                       onClick={handleConfirmHand}
-                      disabled={!isHandComplete}
+                      disabled={requiredCardsForCurrent > 0 && !isHandComplete}
                     >
                       Confirm Hand
                     </Button>
@@ -528,7 +744,6 @@ export function ShowdownDialog() {
                     </p>
                   </div>
 
-                  {/* Adaptive card size based on player count */}
                   {(() => {
                     const cardSize =
                       remainingPlayers.length > 6 ? "small" : "medium";
@@ -536,7 +751,11 @@ export function ShowdownDialog() {
                     return (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {remainingPlayers.map((player) => {
-                          const hasHand = !!playerHands[player.id];
+                          const required = getRequiredCardsForPlayer(player.id);
+                          const entered =
+                            playerHands[player.id]?.filter(Boolean).length || 0;
+                          const isReady = entered >= required;
+
                           const hand = playerHands[player.id] || [];
 
                           return (
@@ -546,7 +765,7 @@ export function ShowdownDialog() {
                               whileTap={{ scale: 0.98 }}
                               onClick={() => handleStartInput(player.id)}
                               className={`relative p-4 rounded-xl border-2 text-left transition-all ${
-                                hasHand
+                                isReady
                                   ? "bg-green-500/10 border-green-500/50"
                                   : "bg-card hover:bg-accent border-border hover:border-primary/50"
                               }`}
@@ -558,24 +777,26 @@ export function ShowdownDialog() {
                                   </div>
                                   <div
                                     className={`text-sm mt-1 flex items-center gap-1 ${
-                                      hasHand
+                                      isReady
                                         ? "text-green-600 font-medium"
                                         : "text-muted-foreground"
                                     }`}
                                   >
-                                    {hasHand ? (
+                                    {isReady ? (
                                       <>
                                         <Check className="w-4 h-4" />
                                         <span>Ready</span>
                                       </>
                                     ) : (
-                                      <span>Tap to enter</span>
+                                      <span>
+                                        Tap to enter {required} card
+                                        {required === 1 ? "" : "s"}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
 
-                                {/* Show entered cards */}
-                                {hasHand && (
+                                {hand.length > 0 && (
                                   <div className="flex gap-1.5 shrink-0">
                                     {hand.map((card, i) => (
                                       <Card
@@ -629,7 +850,6 @@ export function ShowdownDialog() {
                 </p>
               </div>
 
-              {/* Show all players with their cards */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {remainingPlayers.map((player) => {
                   const hand = playerHands[player.id] || [];

@@ -12,6 +12,18 @@ import { Card } from "./Card";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn, getStreetColor, getStreetLabel } from "@/lib/utils";
 
+function buildSeatRing<T extends { seat: number }>(
+  players: T[],
+  dealerSeat: number
+) {
+  const sorted = [...players].sort((a, b) => a.seat - b.seat);
+  const dealerIdx = sorted.findIndex((p) => p.seat === dealerSeat);
+  if (dealerIdx >= 0) {
+    return [...sorted.slice(dealerIdx + 1), ...sorted.slice(0, dealerIdx + 1)];
+  }
+  return sorted;
+}
+
 function StudCardForm() {
   const currentHand = usePokerStore((state) => state.currentHand);
   const players = usePokerStore((state) => state.players);
@@ -40,8 +52,9 @@ function StudCardForm() {
     );
   }
 
-  const activePlayers = players.filter(
-    (p) => !p.isSittingOut && p.status !== "folded"
+  const activePlayers = buildSeatRing(
+    players.filter((p) => !p.isSittingOut && p.status !== "folded"),
+    currentHand.dealerSeat
   );
 
   if (activePlayers.length === 0) return null;
@@ -50,7 +63,12 @@ function StudCardForm() {
   const playerHand = currentHand.playerHands.find(
     (h) => h.playerId === currentPlayer.id
   );
-  const cardCount = playerHand?.cards.length || 0;
+
+  // ✅ Ignore stud placeholder cards like { code:"", faceUp:false }
+  const dealtCards = (playerHand?.cards ?? []).filter((c) => !!c.code);
+
+  // This dialog deals face-up cards only (in 5-card stud that's 4 up cards total)
+  const faceUpCount = dealtCards.filter((c) => c.faceUp).length;
 
   const handleCardSelect = (cardCode: string) => {
     setSelectedCard(cardCode);
@@ -59,38 +77,40 @@ function StudCardForm() {
   const handleConfirm = () => {
     if (!selectedCard) return;
 
+    // ✅ 1-liner guard: prevent dealing more than 4 up-cards
+    if (faceUpCount >= 4) return;
+
     usePokerStore.setState((state) => {
       if (!state.currentHand) return state;
 
-      // All cards dealt through this dialog are face-up
-      // (Hole card is already a placeholder from initialization)
-      const isFaceUp = true;
+      const liveActivePlayers = buildSeatRing(
+        state.players.filter((p) => !p.isSittingOut && p.status !== "folded"),
+        state.currentHand.dealerSeat
+      );
+      if (liveActivePlayers.length === 0) return state;
 
-      // Add card to current player's hand
+      const livePlayer = liveActivePlayers[currentPlayerIndex];
+
+      // All cards dealt through this dialog are face-up
       const updatedPlayerHands = state.currentHand.playerHands.map((ph) => {
-        if (ph.playerId === currentPlayer.id) {
+        if (ph.playerId === livePlayer.id) {
           return {
             ...ph,
-            cards: [...ph.cards, { code: selectedCard, faceUp: isFaceUp }],
+            cards: [...ph.cards, { code: selectedCard, faceUp: true }],
           };
         }
         return ph;
       });
 
-      // Check if this was the last player
-      const isLastPlayer = currentPlayerIndex === activePlayers.length - 1;
+      const isLastPlayer = currentPlayerIndex === liveActivePlayers.length - 1;
 
       if (isLastPlayer) {
-        // All players have received their card - check if we can bet
-        const bettingPlayers = activePlayers.filter(
+        const bettingPlayers = liveActivePlayers.filter(
           (p) => p.status === "active"
         );
 
         if (bettingPlayers.length < 2) {
           // All-in scenario: Skip betting, go to next street
-          let nextStreet = state.currentHand.currentStreet;
-          let nextActiveId = "";
-
           const getNextStreet = (s: string) => {
             if (s === "street1") return "street2";
             if (s === "street2") return "street3";
@@ -102,16 +122,17 @@ function StudCardForm() {
           const upcomingStreet = getNextStreet(state.currentHand.currentStreet);
 
           if (upcomingStreet === "showdown") {
-            nextStreet = "showdown";
-            nextActiveId = "";
-          } else {
-            nextStreet = upcomingStreet as
-              | "street2"
-              | "street3"
-              | "street4"
-              | "street5"
-              | "showdown";
-            nextActiveId = "WAITING_FOR_STUD_CARD";
+            return {
+              ...state,
+              currentHand: {
+                ...state.currentHand,
+                playerHands: updatedPlayerHands,
+                activePlayerId: "",
+                currentStreet: "showdown",
+                currentBet: 0,
+                perPlayerCommitted: {},
+              },
+            };
           }
 
           return {
@@ -119,32 +140,34 @@ function StudCardForm() {
             currentHand: {
               ...state.currentHand,
               playerHands: updatedPlayerHands,
-              activePlayerId: nextActiveId,
-              currentStreet: nextStreet,
+              activePlayerId: "WAITING_FOR_STUD_CARD",
+              currentStreet: upcomingStreet as
+                | "street2"
+                | "street3"
+                | "street4"
+                | "street5"
+                | "showdown",
               currentBet: 0,
               perPlayerCommitted: {},
             },
           };
         } else {
           // Normal betting round
-          const dealerIndex = activePlayers.findIndex(
+          const dealerIndex = liveActivePlayers.findIndex(
             (p) => p.seat === state.currentHand!.dealerSeat
           );
-          // Find next active player (not all-in)
-          // Note: In Stud, high hand usually acts first, but for MVP we use rotation
-          // TODO: Implement high-hand-acts-first logic for Stud
 
           // Simple rotation for now, skipping all-ins
-          let nextIdx = (dealerIndex + 1) % activePlayers.length;
-          let nextPlayer = activePlayers[nextIdx];
+          let nextIdx = (dealerIndex + 1) % liveActivePlayers.length;
+          let nextPlayer = liveActivePlayers[nextIdx];
           let attempts = 0;
 
           while (
             nextPlayer.status === "allIn" &&
-            attempts < activePlayers.length
+            attempts < liveActivePlayers.length
           ) {
-            nextIdx = (nextIdx + 1) % activePlayers.length;
-            nextPlayer = activePlayers[nextIdx];
+            nextIdx = (nextIdx + 1) % liveActivePlayers.length;
+            nextPlayer = liveActivePlayers[nextIdx];
             attempts++;
           }
 
@@ -159,28 +182,29 @@ function StudCardForm() {
             },
           };
         }
-      } else {
-        // Move to next player for dealing
-        return {
-          ...state,
-          currentHand: {
-            ...state.currentHand,
-            playerHands: updatedPlayerHands,
-          },
-        };
       }
+
+      // Move to next player for dealing
+      return {
+        ...state,
+        currentHand: {
+          ...state.currentHand,
+          playerHands: updatedPlayerHands,
+        },
+      };
     });
 
-    // Move to next player or close dialog
+    // Move to next player or reset for next time
     if (currentPlayerIndex < activePlayers.length - 1) {
       setCurrentPlayerIndex(currentPlayerIndex + 1);
       setSelectedCard("");
     } else {
-      // Reset for next time
       setCurrentPlayerIndex(0);
       setSelectedCard("");
     }
   };
+
+  const confirmDisabled = !selectedCard || faceUpCount >= 4;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && setIsOpen(false)}>
@@ -225,16 +249,22 @@ function StudCardForm() {
               </div>
 
               <div className="text-xs text-muted-foreground font-medium bg-muted inline-block px-3 py-1 rounded-full">
-                Card {cardCount + 1} of 5 (Face-Up)
+                Up Card {faceUpCount + 1} of 4
               </div>
+
+              {faceUpCount >= 4 && (
+                <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  This player already has all 4 face-up cards.
+                </div>
+              )}
             </div>
 
             {/* Current player's existing cards */}
-            {playerHand && playerHand.cards.length > 0 && (
+            {dealtCards.length > 0 && (
               <div className="flex justify-center gap-2 p-3 bg-muted/30 rounded-xl overflow-x-auto">
-                {playerHand.cards.map((card, i) => (
+                {dealtCards.map((card, i) => (
                   <motion.div
-                    key={i}
+                    key={`${card.code}-${i}`}
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: i * 0.1 }}
@@ -267,11 +297,9 @@ function StudCardForm() {
               <CardKeyboard
                 onCardSelect={handleCardSelect}
                 usedCards={[
-                  // All cards from all player hands
-                  ...currentHand.playerHands.flatMap((ph) =>
-                    ph.cards.map((c) => c.code)
-                  ),
-                  // Currently selected card (if any)
+                  ...currentHand.playerHands
+                    .flatMap((ph) => ph.cards.map((c) => c.code))
+                    .filter(Boolean),
                   ...(selectedCard ? [selectedCard] : []),
                 ]}
               />
@@ -281,7 +309,7 @@ function StudCardForm() {
               size="lg"
               className="w-full h-14 text-lg font-bold shadow-md"
               onClick={handleConfirm}
-              disabled={!selectedCard}
+              disabled={confirmDisabled}
             >
               Confirm Card
             </Button>

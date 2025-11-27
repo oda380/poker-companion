@@ -1,4 +1,4 @@
-export const APP_VERSION = "1.7.1";
+export const APP_VERSION = "2.0.0";
 
 export const DEFAULT_STACK = 1000;
 

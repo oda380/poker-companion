@@ -166,8 +166,11 @@ export function Controls() {
             {currentBet > 0 ? "Call / Raise" : "Bet"}
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[60vh]">
-          <div className="h-full flex flex-col gap-4 p-2">
+        <SheetContent
+          side="bottom"
+          className="h-auto max-h-[85vh] overflow-y-auto"
+        >
+          <div className="flex flex-col gap-4 p-2">
             <div className="text-center text-2xl font-bold">Bet Amount</div>
 
             {currentBet > 0 &&
@@ -195,14 +198,14 @@ export function Controls() {
             <Tabs
               value={inputMode}
               onValueChange={(v) => setInputMode(v as "slider" | "numpad")}
-              className="flex-1 flex flex-col"
+              className="flex flex-col"
             >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="slider">Slider</TabsTrigger>
                 <TabsTrigger value="numpad">Numpad</TabsTrigger>
               </TabsList>
 
-              <div className="flex-1 flex flex-col justify-center gap-4 py-4">
+              <div className="flex flex-col justify-center gap-4 py-4">
                 <div className="text-6xl font-bold text-center tabular-nums tracking-tighter">
                   {betAmount}
                 </div>
@@ -243,7 +246,7 @@ export function Controls() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="numpad" className="mt-0 h-full">
+                <TabsContent value="numpad" className="mt-0">
                   <Numpad value={betAmount} onChange={setBetAmount} />
                 </TabsContent>
               </div>

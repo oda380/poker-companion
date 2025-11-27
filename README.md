@@ -1,4 +1,4 @@
-# Poker Companion (v1.7.1)
+# Poker Companion (v2.0.0)
 
 A beginner friendly poker dealer assistant designed for home games. Host your own Texas Hold'em or 5-Card Stud games using a single device (tablet/laptop) as the table manager.
 
@@ -30,9 +30,11 @@ A beginner friendly poker dealer assistant designed for home games. Host your ow
 
 ### 🛠️ Dealer Tools
 
+- **Side Pots**: Automatic calculation of main and side pots for all-in scenarios.
 - **Session Persistence**: Games are automatically saved to local storage (IndexedDB).
 - **History Management**:
   - **Export/Import**: Backup your game history or transfer it to another device.
+  - **Visual History**: Review past hands with visual card displays and winner highlights.
   - **Mobile Layout**: Stacked headers for better readability on small screens.
 - **Dynamic Settings**:
   - Add/Remove players mid-game.
@@ -56,6 +58,7 @@ This app is designed to be used on a **single shared device** (like an iPad or L
 - **Persistence**: Dexie.js (IndexedDB) + Persist Middleware
 - **Animations**: Framer Motion + Canvas Confetti
 - **Logic**: Custom poker engine + `poker-evaluator`
+- **Testing**: Vitest
 
 ## 📦 Getting Started
 
@@ -98,14 +101,14 @@ src/
 │   └── ui/           # Design System (Buttons, Dialogs, etc.)
 ├── lib/              # Core Logic
 │   ├── game-logic.ts # State machine & rules engine
-│   └── hand-evaluator.ts # Winner determination
+│   ├── hand-evaluator.ts # Winner determination
+│   └── payout-calculator.ts # Pot distribution logic
 ├── store/            # Zustand Store (State & Persistence)
 └── types.ts          # TypeScript Definitions
 ```
 
-## ⚠️ Known Limitations (v1.7.1)
+## ⚠️ Known Limitations (v2.0.0)
 
-- **Side Pots**: Currently, all bets go to a single main pot. Side pot logic is planned for v2.
 - **Multiplayer Sync**: This is a **local-only** tool. Players cannot join from their own phones to see hole cards (yet).
 
 ## 📄 License

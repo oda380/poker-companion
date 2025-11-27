@@ -117,8 +117,18 @@ export async function getSessions() {
 }
 
 export async function getSessionHands(sessionId: string) {
-  return await db.hands
+  const hands = await db.hands
     .where("sessionId")
     .equals(sessionId)
     .sortBy("handNumber");
+
+  // ✅ Normalize old records for backward compatibility
+  return hands.map((hand) => ({
+    ...hand,
+    summary: {
+      ...hand.summary,
+      potResults: hand.summary.potResults ?? [],
+      refunds: hand.summary.refunds ?? {},
+    },
+  }));
 }
