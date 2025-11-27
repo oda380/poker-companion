@@ -499,13 +499,7 @@ export function processAction(
       newPots[0] = { ...newPots[0], amount: newPots[0].amount + roundPot };
     }
 
-    const activeSurvivors = updatedPlayers.filter(
-      (p) => !p.isSittingOut && p.status === "active"
-    );
-    const jumpToShowdown =
-      activeSurvivors.length === 0 && nextStreet !== "showdown";
-
-    if (nextStreet === "showdown" || jumpToShowdown) {
+    if (nextStreet === "showdown") {
       return {
         ...table,
         players: updatedPlayers,
