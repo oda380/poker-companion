@@ -10,7 +10,7 @@ import { saveCurrentGame, clearCurrentGame } from "@/lib/game-persistence";
  */
 export function useAutoSaveGame() {
   const gameState = usePokerStore((state) => state);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Clear previous timeout
