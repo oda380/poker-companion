@@ -40,6 +40,8 @@ import {
 } from "@/lib/data-export";
 import { toast } from "sonner";
 import { usePWAInstall } from "@/hooks/use-pwa-install";
+import { resetAllHelpMessages } from "@/hooks/useHelpMessage";
+import { useGlobalHelpToggle } from "@/hooks/useGlobalHelpToggle";
 
 export function SettingsDialog() {
   const players = usePokerStore((state) => state.players);
@@ -49,6 +51,13 @@ export function SettingsDialog() {
   const setTableConfig = usePokerStore((state) => state.setTableConfig);
   const tableName = usePokerStore((state) => state.name);
   const gameVariant = usePokerStore((state) => state.gameVariant);
+  const currentHand = usePokerStore((state) => state.currentHand);
+
+  // Can modify players only between hands
+  const canModifyPlayers = !currentHand || currentHand.finished;
+
+  const { isEnabled: globalHelpEnabled, toggle: toggleGlobalHelp } =
+    useGlobalHelpToggle();
 
   const updatePlayerName = usePokerStore((state) => state.updatePlayerName);
 
@@ -113,29 +122,51 @@ export function SettingsDialog() {
 
             <TabsContent value="players" className="space-y-4 py-4">
               <div className="space-y-4">
+                {/* Status indicator */}
+                {!canModifyPlayers && (
+                  <div className="px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Players locked during active hand
+                  </div>
+                )}
+
                 <div className="flex gap-2 items-end">
                   <div className="space-y-2 flex-1">
-                    <Label>New Player Name</Label>
+                    <Label
+                      className={
+                        !canModifyPlayers ? "text-muted-foreground" : ""
+                      }
+                    >
+                      New Player Name
+                    </Label>
                     <Input
                       value={newPlayerName}
                       onChange={(e) => setNewPlayerName(e.target.value)}
                       placeholder="Player Name"
+                      disabled={!canModifyPlayers}
                     />
                   </div>
                   <div className="space-y-2 w-24">
-                    <Label>Stack</Label>
+                    <Label
+                      className={
+                        !canModifyPlayers ? "text-muted-foreground" : ""
+                      }
+                    >
+                      Stack
+                    </Label>
                     <Input
                       type="number"
                       value={newPlayerStack}
                       onChange={(e) =>
                         setNewPlayerStack(Number(e.target.value))
                       }
+                      disabled={!canModifyPlayers}
                     />
                   </div>
                   <Button
                     onClick={handleAddPlayer}
                     size="icon"
                     className="mb-0.5"
+                    disabled={!canModifyPlayers}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -181,7 +212,9 @@ export function SettingsDialog() {
                               </div>
                             ) : (
                               <div
-                                className="flex items-center gap-2 group cursor-pointer"
+                                className={`flex items-center gap-2 group ${
+                                  canModifyPlayers ? "cursor-pointer" : ""
+                                }`}
                                 onClick={() => startEditing(player)}
                               >
                                 <div className="font-medium truncate">
@@ -206,6 +239,7 @@ export function SettingsDialog() {
                           size="icon"
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2"
                           onClick={() => removePlayer(player.id)}
+                          disabled={!canModifyPlayers}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -459,6 +493,51 @@ export function SettingsDialog() {
                       Contact
                     </a>
                   </Button>
+                </div>
+
+                {/* Help Messages Section */}
+                <div className="pt-6 border-t space-y-3">
+                  <h3 className="font-semibold text-sm">Help Messages</h3>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm">Show help messages</p>
+                      <p className="text-xs text-muted-foreground">
+                        Contextual tips and hints throughout the app
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => toggleGlobalHelp(!globalHelpEnabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        globalHelpEnabled ? "bg-emerald-600" : "bg-muted"
+                      }`}
+                      role="switch"
+                      aria-checked={globalHelpEnabled}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          globalHelpEnabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {globalHelpEnabled && (
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            "Reset all dismissed messages? They will appear again when relevant."
+                          )
+                        ) {
+                          resetAllHelpMessages();
+                        }
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Reset dismissed messages
+                    </button>
+                  )}
                 </div>
 
                 <div className="pt-8 text-xs text-muted-foreground">

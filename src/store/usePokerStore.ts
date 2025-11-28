@@ -75,25 +75,45 @@ export const usePokerStore = create<PokerStore>()(
           set({ name, gameVariant: variant, config }),
 
         addPlayer: (name, seat, stack) =>
-          set((state) => ({
-            players: [
-              ...state.players,
-              {
-                id: crypto.randomUUID(),
-                name,
-                seat,
-                stack,
-                isSittingOut: false,
-                status: "active",
-                wins: 0,
-              },
-            ],
-          })),
+          set((state) => {
+            // Guard: Prevent adding players during active hand
+            if (state.currentHand && !state.currentHand.finished) {
+              toast.error(
+                "Cannot add players during an active hand. Wait for the current hand to finish."
+              );
+              return state; // No change
+            }
+
+            return {
+              players: [
+                ...state.players,
+                {
+                  id: crypto.randomUUID(),
+                  name,
+                  seat,
+                  stack,
+                  isSittingOut: false,
+                  status: "active",
+                  wins: 0,
+                },
+              ],
+            };
+          }),
 
         removePlayer: (playerId) =>
-          set((state) => ({
-            players: state.players.filter((p) => p.id !== playerId),
-          })),
+          set((state) => {
+            // Guard: Prevent removing players during active hand
+            if (state.currentHand && !state.currentHand.finished) {
+              toast.error(
+                "Cannot remove players during an active hand. Wait for the current hand to finish."
+              );
+              return state; // No change
+            }
+
+            return {
+              players: state.players.filter((p) => p.id !== playerId),
+            };
+          }),
 
         updatePlayerStatus: (playerId, status) =>
           set((state) => ({
