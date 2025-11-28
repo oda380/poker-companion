@@ -17,7 +17,6 @@ import { ChipAnimation } from "@/components/game/ChipAnimation";
 import { NavBar } from "@/components/nav-bar";
 import { cn, getStreetColor, getStreetLabel } from "@/lib/utils";
 import { useAutoSaveGame } from "@/hooks/use-auto-save";
-import { HelpBanner } from "@/components/HelpBanner";
 
 export default function TablePage() {
   // Auto-save game state
@@ -119,14 +118,6 @@ export default function TablePage() {
 
       {/* Game Area */}
       <main className="flex-1 overflow-y-auto pb-32 pt-16 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
-        {/* Help Banner - Player Modification */}
-        <div className="px-4 pt-4 pb-4">
-          <HelpBanner
-            messageId="player-modification-timing"
-            condition={!currentHand || currentHand.finished}
-          />
-        </div>
-
         {/* Pot Display */}
         {/* Lower z-index when dealer selection is open to prevent rendering artifacts on mobile */}
         <div

@@ -40,8 +40,6 @@ import {
 } from "@/lib/data-export";
 import { toast } from "sonner";
 import { usePWAInstall } from "@/hooks/use-pwa-install";
-import { resetAllHelpMessages } from "@/hooks/useHelpMessage";
-import { useGlobalHelpToggle } from "@/hooks/useGlobalHelpToggle";
 
 export function SettingsDialog() {
   const players = usePokerStore((state) => state.players);
@@ -55,9 +53,6 @@ export function SettingsDialog() {
 
   // Can modify players only between hands
   const canModifyPlayers = !currentHand || currentHand.finished;
-
-  const { isEnabled: globalHelpEnabled, toggle: toggleGlobalHelp } =
-    useGlobalHelpToggle();
 
   const updatePlayerName = usePokerStore((state) => state.updatePlayerName);
 
@@ -493,51 +488,6 @@ export function SettingsDialog() {
                       Contact
                     </a>
                   </Button>
-                </div>
-
-                {/* Help Messages Section */}
-                <div className="pt-6 border-t space-y-3">
-                  <h3 className="font-semibold text-sm">Help Messages</h3>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm">Show help messages</p>
-                      <p className="text-xs text-muted-foreground">
-                        Contextual tips and hints throughout the app
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => toggleGlobalHelp(!globalHelpEnabled)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        globalHelpEnabled ? "bg-emerald-600" : "bg-muted"
-                      }`}
-                      role="switch"
-                      aria-checked={globalHelpEnabled}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          globalHelpEnabled ? "translate-x-6" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {globalHelpEnabled && (
-                    <button
-                      onClick={() => {
-                        if (
-                          confirm(
-                            "Reset all dismissed messages? They will appear again when relevant."
-                          )
-                        ) {
-                          resetAllHelpMessages();
-                        }
-                      }}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Reset dismissed messages
-                    </button>
-                  )}
                 </div>
 
                 <div className="pt-8 text-xs text-muted-foreground">
