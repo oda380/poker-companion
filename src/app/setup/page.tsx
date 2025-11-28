@@ -64,9 +64,27 @@ export default function SetupPage() {
     });
   };
 
+  // Auto-set Ante for Stud
+  useEffect(() => {
+    if (variant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
+      if (!ante || Number(ante) <= 0) {
+        setAnte(10);
+      }
+    }
+  }, [variant]);
+
   const handleStart = () => {
     // Blur any focused input to ensure keyboard closes before navigation
     tableNameInputRef.current?.blur();
+
+    // Validation for Stud
+    if (variant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
+      if (!ante || Number(ante) <= 0) {
+        // Prevent start if Ante is invalid
+        // Ideally show a toast, but for now just returning is safe as button will be disabled
+        return;
+      }
+    }
 
     // Small delay to let keyboard close
     setTimeout(() => {
@@ -93,6 +111,9 @@ export default function SetupPage() {
       router.push("/table");
     }, 100);
   };
+
+  const isStud = variant === GAME_VARIANTS.FIVE_CARD_STUD.id;
+  const isStartDisabled = isStud && (!ante || Number(ante) <= 0);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden pt-20">
@@ -184,7 +205,9 @@ export default function SetupPage() {
                 </>
               )}
               <div className="space-y-3">
-                <Label>Ante (Optional)</Label>
+                <Label className={isStud ? "text-primary font-bold" : ""}>
+                  Ante {isStud ? "(Required)" : "(Optional)"}
+                </Label>
                 <Input
                   type="number"
                   value={ante}
@@ -192,7 +215,10 @@ export default function SetupPage() {
                     setAnte(e.target.value === "" ? "" : Number(e.target.value))
                   }
                   onFocus={(e) => e.target.select()}
-                  className="bg-background/50 border-white/10"
+                  className={`bg-background/50 border-white/10 ${isStud && (!ante || Number(ante) <= 0)
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                    }`}
                 />
               </div>
               <div className="space-y-3">
@@ -259,6 +285,7 @@ export default function SetupPage() {
               size="lg"
               className="w-full h-16 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white disabled:opacity-50"
               onClick={handleStart}
+              disabled={isStartDisabled}
             >
               Create Table
             </Button>
