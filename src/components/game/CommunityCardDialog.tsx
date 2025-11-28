@@ -144,9 +144,8 @@ function CommunityCardForm() {
                 <div
                   key={i}
                   onClick={() => setActiveSlot(i)}
-                  className={`relative cursor-pointer transition-all ${
-                    isActive ? "scale-110 z-10" : "hover:scale-105"
-                  }`}
+                  className={`relative cursor-pointer transition-all ${isActive ? "scale-110 z-10" : "hover:scale-105"
+                    }`}
                 >
                   {card ? (
                     <div
@@ -160,11 +159,10 @@ function CommunityCardForm() {
                     </div>
                   ) : (
                     <div
-                      className={`w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed flex items-center justify-center ${
-                        isActive
+                      className={`w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed flex items-center justify-center ${isActive
                           ? "border-primary ring-4 ring-primary ring-offset-2 ring-offset-background"
                           : "border-muted-foreground/30"
-                      }`}
+                        }`}
                     >
                       <span className="text-xs text-muted-foreground font-medium">
                         Card {i + 1}
@@ -183,7 +181,7 @@ function CommunityCardForm() {
           </div>
         </div>
 
-        <div className="h-64">
+        <div className="h-auto bg-muted/20 rounded-xl p-2">
           <CardKeyboard
             onCardSelect={handleCardSelect}
             usedCards={[

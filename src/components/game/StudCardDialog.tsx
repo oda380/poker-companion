@@ -293,7 +293,7 @@ function StudCardForm() {
               )}
             </div>
 
-            <div className="h-48 bg-muted/20 rounded-xl p-2">
+            <div className="h-auto bg-muted/20 rounded-xl p-2">
               <CardKeyboard
                 onCardSelect={handleCardSelect}
                 usedCards={[
