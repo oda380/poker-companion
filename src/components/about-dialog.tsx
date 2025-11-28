@@ -28,7 +28,7 @@ export function AboutDialog() {
           <DialogTitle className="text-2xl">About Poker Companion</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1">
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <h3 className="font-semibold text-lg">
@@ -102,7 +102,7 @@ export function AboutDialog() {
           </div>
         </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className="sm:justify-center">
           <DialogClose asChild>
             <Button
               type="button"
