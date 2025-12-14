@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
@@ -119,11 +120,11 @@ function CommunityCardForm() {
     <>
       <DialogHeader>
         <DialogTitle>Deal {streetName} Cards</DialogTitle>
-        <div className="text-sm text-muted-foreground">
+        <DialogDescription>
           {currentHand.currentStreet === "flop"
             ? "Burn 1 card, then deal 3 cards to the board"
             : "Burn 1 card, then deal 1 card to the board"}
-        </div>
+        </DialogDescription>
       </DialogHeader>
       <div className="space-y-6">
         <div className="text-center space-y-4">
@@ -160,8 +161,8 @@ function CommunityCardForm() {
                   ) : (
                     <div
                       className={`w-20 h-28 bg-muted/50 rounded-xl border-2 border-dashed flex items-center justify-center ${isActive
-                          ? "border-primary ring-4 ring-primary ring-offset-2 ring-offset-background"
-                          : "border-muted-foreground/30"
+                        ? "border-primary ring-4 ring-primary ring-offset-2 ring-offset-background"
+                        : "border-muted-foreground/30"
                         }`}
                     >
                       <span className="text-xs text-muted-foreground font-medium">

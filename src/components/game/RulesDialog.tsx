@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -39,6 +40,9 @@ export function RulesDialog({ trigger }: RulesDialogProps) {
             <BookOpen className="h-6 w-6 text-primary" />
             Game Rules
           </DialogTitle>
+          <DialogDescription>
+            Learn the basics of Texas Hold&apos;em and 5-Card Stud, or check hand rankings.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs

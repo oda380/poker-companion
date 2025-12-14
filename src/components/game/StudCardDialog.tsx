@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
@@ -211,9 +212,9 @@ function StudCardForm() {
       <DialogContent className="sm:max-w-md overflow-hidden">
         <DialogHeader>
           <DialogTitle>Deal {streetName} Card</DialogTitle>
-          <div className="text-sm text-muted-foreground">
+          <DialogDescription>
             Select a card to deal face-up to the current player.
-          </div>
+          </DialogDescription>
         </DialogHeader>
 
         <AnimatePresence mode="wait">

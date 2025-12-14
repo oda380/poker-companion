@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
@@ -43,49 +44,53 @@ function DealerSelectionForm({ onSelectDealer }: DealerSelectionDialogProps) {
     }
   };
 
-  if (!isReady) return null;
-
   return (
     <>
       <DialogHeader>
         <DialogTitle>Select Initial Dealer</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
+        <DialogDescription>
           Choose who will be the dealer for the first hand. The dealer button
           will rotate clockwise after each hand.
-        </p>
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="space-y-2">
-          {players.map((player) => (
-            <Button
-              key={player.id}
-              variant={selectedSeat === player.seat ? "default" : "outline"}
-              className="w-full h-14 text-lg justify-start"
-              onClick={() => {
-                console.log("Selected seat:", player.seat);
-                setSelectedSeat(player.seat);
-              }}
-            >
-              <div className="flex items-center justify-between w-full">
-                <span>{player.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  Seat {player.seat}
-                </span>
-              </div>
-            </Button>
-          ))}
+      {!isReady ? (
+        <div className="h-40 flex items-center justify-center">
+          <span className="loading loading-spinner loading-md"></span>
         </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {players.map((player) => (
+              <Button
+                key={player.id}
+                variant={selectedSeat === player.seat ? "default" : "outline"}
+                className="w-full h-14 text-lg justify-start"
+                onClick={() => {
+                  console.log("Selected seat:", player.seat);
+                  setSelectedSeat(player.seat);
+                }}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span>{player.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Seat {player.seat}
+                  </span>
+                </div>
+              </Button>
+            ))}
+          </div>
 
-        <Button
-          size="lg"
-          className="w-full h-14"
-          onClick={handleConfirm}
-          disabled={selectedSeat === null}
-        >
-          Confirm Dealer
-        </Button>
-      </div>
+          <Button
+            size="lg"
+            className="w-full h-14"
+            onClick={handleConfirm}
+            disabled={selectedSeat === null}
+          >
+            Confirm Dealer
+          </Button>
+        </div>
+      )}
     </>
   );
 }
@@ -104,7 +109,7 @@ export function DealerSelectionDialog({
     <Dialog
       key={`dealer-${players.length}-${players[0]?.id || "none"}`}
       open={isFirstHand}
-      onOpenChange={() => {}}
+      onOpenChange={() => { }}
     >
       <DialogContent className="sm:max-w-md">
         <DealerSelectionForm onSelectDealer={onSelectDealer} />

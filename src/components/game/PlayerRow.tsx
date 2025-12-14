@@ -30,15 +30,17 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
             layout
             id={`player-row-${player.id}`}
             className={cn(
-                "p-5 border-b flex justify-between items-center transition-all duration-300 relative rounded-lg mx-2 my-1",
-                isActive && "bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/20",
+                "p-5 flex justify-between items-center transition-all duration-300 relative rounded-xl mx-3 my-2",
+                isActive
+                    ? "glass-strong bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent ring-2 ring-emerald-500/50 shadow-glow-emerald-sm"
+                    : "glass hover:bg-white/[0.08]",
                 player.status === "folded" && "opacity-40 grayscale"
             )}
         >
             {isActive && (
                 <motion.div
                     layoutId="active-indicator"
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-l-lg"
+                    className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 via-emerald-500 to-teal-500 rounded-l-xl"
                 />
             )}
 
@@ -46,10 +48,10 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                 <div className="relative">
                     <motion.div
                         className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg transition-colors duration-300",
+                            "w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-lg transition-all duration-300",
                             isActive
-                                ? "bg-gradient-to-br from-emerald-500 to-emerald-700 ring-2 ring-emerald-500"
-                                : "bg-gradient-to-br from-gray-600 to-gray-800"
+                                ? "bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 ring-2 ring-emerald-400/50"
+                                : "bg-gradient-to-br from-slate-500 to-slate-700"
                         )}
                         animate={isActive ? {
                             scale: [1, 1.05, 1],
@@ -105,8 +107,8 @@ export function PlayerRow({ player, handState, isActive, isDealer }: PlayerRowPr
                     </div>
                 )}
 
-                {player.status === "folded" && <Badge variant="secondary" className="bg-gray-700 text-gray-200">Fold</Badge>}
-                {player.status === "allIn" && <Badge variant="destructive" className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg">All-In</Badge>}
+                {player.status === "folded" && <Badge variant="secondary" className="bg-slate-700/80 text-slate-200 border-0">Fold</Badge>}
+                {player.status === "allIn" && <Badge variant="destructive" className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg border-0">All-In</Badge>}
 
                 {showBust && (
                     <>

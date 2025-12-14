@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CardKeyboard } from "./CardKeyboard";
@@ -513,6 +514,9 @@ export function ShowdownDialog() {
               </div>
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Results of the hand showdown and pot distribution.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -671,8 +675,8 @@ export function ShowdownDialog() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setActiveSlot(i)}
                                 className={`relative cursor-pointer rounded-xl transition-all ${isActive
-                                    ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
-                                    : "hover:ring-2 hover:ring-primary/50"
+                                  ? "ring-4 ring-primary ring-offset-2 ring-offset-background z-10"
+                                  : "hover:ring-2 hover:ring-primary/50"
                                   }`}
                               >
                                 {card ? (
@@ -764,8 +768,8 @@ export function ShowdownDialog() {
                               whileTap={{ scale: 0.98 }}
                               onClick={() => handleStartInput(player.id)}
                               className={`relative p-4 rounded-xl border-2 text-left transition-all ${isReady
-                                  ? "bg-green-500/10 border-green-500/50"
-                                  : "bg-card hover:bg-accent border-border hover:border-primary/50"
+                                ? "bg-green-500/10 border-green-500/50"
+                                : "bg-card hover:bg-accent border-border hover:border-primary/50"
                                 }`}
                             >
                               <div className="flex items-center justify-between gap-3">
@@ -775,8 +779,8 @@ export function ShowdownDialog() {
                                   </div>
                                   <div
                                     className={`text-sm mt-1 flex items-center gap-1 ${isReady
-                                        ? "text-green-600 font-medium"
-                                        : "text-muted-foreground"
+                                      ? "text-green-600 font-medium"
+                                      : "text-muted-foreground"
                                       }`}
                                   >
                                     {isReady ? (

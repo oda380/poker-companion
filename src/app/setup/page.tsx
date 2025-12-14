@@ -64,14 +64,17 @@ export default function SetupPage() {
     });
   };
 
-  // Auto-set Ante for Stud
-  useEffect(() => {
-    if (variant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
+  // Removed problematic useEffect
+
+  const handleVariantChange = (newVariant: GameVariant) => {
+    setVariant(newVariant);
+    // Auto-set Ante for Stud
+    if (newVariant === GAME_VARIANTS.FIVE_CARD_STUD.id) {
       if (!ante || Number(ante) <= 0) {
         setAnte(10);
       }
     }
-  }, [variant]);
+  };
 
   const handleStart = () => {
     // Blur any focused input to ensure keyboard closes before navigation
@@ -118,6 +121,15 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden pt-20">
       <NavBar />
+
+      {/* Ambient Background Orbs */}
+      <div className="ambient-orb-emerald w-[400px] h-[400px] -top-20 -right-20" />
+      <div className="ambient-orb-purple w-[350px] h-[350px] bottom-0 -left-20" />
+
+      {/* Noise Texture */}
+      <div className="absolute inset-0 bg-noise pointer-events-none" />
+
+      {/* Background Gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-primary/10 via-background to-background pointer-events-none" />
 
       <motion.div
@@ -127,43 +139,43 @@ export default function SetupPage() {
         className="w-full max-w-2xl relative z-10"
       >
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight">Table Setup</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-gradient-emerald">Table Setup</h2>
           <p className="text-muted-foreground mt-2">
             Configure your game settings below.
           </p>
         </div>
 
-        <Card className="border-white/10 bg-card/50 backdrop-blur-xl shadow-2xl">
+        <Card className="glass-card gradient-border">
           <CardContent className="p-8 space-y-8">
             <div className="space-y-3">
-              <Label className="text-base">Table Name</Label>
+              <Label className="text-base font-medium">Table Name</Label>
               <Input
                 ref={tableNameInputRef}
                 value={tableName}
                 onChange={(e) => setTableName(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                className="h-12 text-lg bg-background/50 border-white/10 focus:border-primary/50 transition-colors"
+                className="h-12 text-lg glass border-white/10 focus:border-primary/50 input-glow transition-all"
                 placeholder="Enter table name..."
               />
             </div>
 
             <div className="space-y-3">
-              <Label className="text-base">Game Variant</Label>
+              <Label className="text-base font-medium">Game Variant</Label>
               <Tabs
                 defaultValue={GAME_VARIANTS.TEXAS_HOLDEM.id}
-                onValueChange={(v) => setVariant(v as GameVariant)}
+                onValueChange={(v) => handleVariantChange(v as GameVariant)}
                 className="w-full"
               >
-                <TabsList className="grid w-full grid-cols-2 h-12 bg-background/50 p-1">
+                <TabsList className="grid w-full grid-cols-2 h-12 glass p-1">
                   <TabsTrigger
                     value={GAME_VARIANTS.TEXAS_HOLDEM.id}
-                    className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    className="text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-glow-emerald-sm transition-all"
                   >
                     {GAME_VARIANTS.TEXAS_HOLDEM.label}
                   </TabsTrigger>
                   <TabsTrigger
                     value={GAME_VARIANTS.FIVE_CARD_STUD.id}
-                    className="text-base data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    className="text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-glow-emerald-sm transition-all"
                   >
                     {GAME_VARIANTS.FIVE_CARD_STUD.label}
                   </TabsTrigger>
@@ -175,7 +187,7 @@ export default function SetupPage() {
               {variant === GAME_VARIANTS.TEXAS_HOLDEM.id && (
                 <>
                   <div className="space-y-3">
-                    <Label>Small Blind</Label>
+                    <Label className="font-medium">Small Blind</Label>
                     <Input
                       type="number"
                       value={smallBlind}
@@ -185,11 +197,11 @@ export default function SetupPage() {
                         )
                       }
                       onFocus={(e) => e.target.select()}
-                      className="bg-background/50 border-white/10"
+                      className="glass border-white/10 input-glow"
                     />
                   </div>
                   <div className="space-y-3">
-                    <Label>Big Blind</Label>
+                    <Label className="font-medium">Big Blind</Label>
                     <Input
                       type="number"
                       value={bigBlind}
@@ -199,13 +211,13 @@ export default function SetupPage() {
                         )
                       }
                       onFocus={(e) => e.target.select()}
-                      className="bg-background/50 border-white/10"
+                      className="glass border-white/10 input-glow"
                     />
                   </div>
                 </>
               )}
               <div className="space-y-3">
-                <Label className={isStud ? "text-primary font-bold" : ""}>
+                <Label className={isStud ? "text-primary font-bold" : "font-medium"}>
                   Ante {isStud ? "(Required)" : "(Optional)"}
                 </Label>
                 <Input
@@ -215,14 +227,14 @@ export default function SetupPage() {
                     setAnte(e.target.value === "" ? "" : Number(e.target.value))
                   }
                   onFocus={(e) => e.target.select()}
-                  className={`bg-background/50 border-white/10 ${isStud && (!ante || Number(ante) <= 0)
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
+                  className={`glass border-white/10 input-glow ${isStud && (!ante || Number(ante) <= 0)
+                    ? "border-red-500/50 focus:border-red-500"
+                    : ""
                     }`}
                 />
               </div>
               <div className="space-y-3">
-                <Label>Starting Stack</Label>
+                <Label className="font-medium">Starting Stack</Label>
                 <Input
                   type="number"
                   value={startingStack}
@@ -232,15 +244,15 @@ export default function SetupPage() {
                     )
                   }
                   onFocus={(e) => e.target.select()}
-                  className="bg-background/50 border-white/10"
+                  className="glass border-white/10 input-glow"
                 />
               </div>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/5">
               <div className="flex justify-between items-center">
-                <Label className="text-base">Initial Players</Label>
-                <span className="text-2xl font-bold text-primary">
+                <Label className="text-base font-medium">Initial Players</Label>
+                <span className="text-2xl font-bold text-gradient-emerald">
                   {playerCount}
                 </span>
               </div>
@@ -252,7 +264,7 @@ export default function SetupPage() {
                 onChange={(e) =>
                   handlePlayerCountChange(Number(e.target.value))
                 }
-                className="accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                className="h-2"
               />
               <div className="flex justify-between text-xs text-muted-foreground px-1">
                 <span>Heads Up (2)</span>
@@ -262,7 +274,13 @@ export default function SetupPage() {
               {/* Player Names Grid */}
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {Array.from({ length: playerCount }).map((_, i) => (
-                  <div key={i} className="space-y-1">
+                  <motion.div
+                    key={i}
+                    className="space-y-1"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     <Label className="text-xs text-muted-foreground">
                       Seat {i + 1}
                     </Label>
@@ -273,17 +291,17 @@ export default function SetupPage() {
                         newNames[i] = e.target.value;
                         setPlayerNames(newNames);
                       }}
-                      className="h-9 bg-background/30"
+                      className="h-9 glass border-white/5"
                       placeholder={`Player ${i + 1}`}
                     />
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
 
             <Button
               size="lg"
-              className="w-full h-16 text-lg bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white disabled:opacity-50"
+              className="w-full h-16 text-lg bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:via-emerald-700 hover:to-teal-700 text-white btn-glow disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.01] active:scale-[0.99]"
               onClick={handleStart}
               disabled={isStartDisabled}
             >

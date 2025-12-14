@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -104,6 +105,9 @@ export function SettingsDialog() {
       <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Table Settings</DialogTitle>
+          <DialogDescription>
+            Manage players, configure game rules, and handle data backups.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 pr-4">
@@ -207,9 +211,8 @@ export function SettingsDialog() {
                               </div>
                             ) : (
                               <div
-                                className={`flex items-center gap-2 group ${
-                                  canModifyPlayers ? "cursor-pointer" : ""
-                                }`}
+                                className={`flex items-center gap-2 group ${canModifyPlayers ? "cursor-pointer" : ""
+                                  }`}
                                 onClick={() => startEditing(player)}
                               >
                                 <div className="font-medium truncate">
@@ -340,9 +343,8 @@ export function SettingsDialog() {
                       try {
                         const count = await importGameData(file);
                         toast.success("Import successful!", {
-                          description: `Imported ${count} game session${
-                            count !== 1 ? "s" : ""
-                          }`,
+                          description: `Imported ${count} game session${count !== 1 ? "s" : ""
+                            }`,
                         });
                       } catch (error) {
                         toast.error("Import failed", {

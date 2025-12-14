@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { usePokerStore } from "@/store/usePokerStore";
 import { useState } from "react";
@@ -36,12 +36,12 @@ export function RebuyDialog({ playerId, playerName }: RebuyDialogProps) {
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle>Re-buy for {playerName}</DialogTitle>
+                    <DialogDescription>
+                        Enter amount to add to stack.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                            Enter amount to add to stack.
-                        </p>
                         <Input
                             type="number"
                             value={amount}

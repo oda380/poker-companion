@@ -47,7 +47,7 @@ export function NavBar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 glass">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link
@@ -60,7 +60,7 @@ export function NavBar() {
               }}
               className="flex items-center gap-2 font-bold text-xl tracking-tight hover:opacity-80 transition-opacity"
             >
-              <span className="bg-gradient-to-br from-emerald-400 to-emerald-600 bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 Poker Companion
               </span>
             </Link>
@@ -84,7 +84,7 @@ export function NavBar() {
                   handleNavigation("/history");
                 }
               }}
-              className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary/10 text-secondary-foreground text-xs font-medium hover:bg-secondary/20 transition-colors"
+              className="md:hidden flex items-center gap-1 px-3 py-1.5 rounded-full glass text-xs font-medium hover:bg-white/10 transition-colors"
             >
               <History className="w-3 h-3" />
               History
@@ -95,7 +95,7 @@ export function NavBar() {
                 <button
                   onClick={() => handleNavigation("/setup")}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
                     "text-muted-foreground hover:bg-white/5 hover:text-primary"
                   )}
                 >
@@ -106,9 +106,9 @@ export function NavBar() {
                 <Link
                   href="/"
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
                     pathname === "/" || pathname === "/setup"
-                      ? "bg-white/10 text-primary"
+                      ? "glass text-primary"
                       : "text-muted-foreground hover:bg-white/5 hover:text-primary"
                   )}
                 >
@@ -119,9 +119,9 @@ export function NavBar() {
               <Link
                 href="/history"
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
                   pathname === "/history"
-                    ? "bg-white/10 text-primary"
+                    ? "glass text-primary"
                     : "text-muted-foreground hover:bg-white/5 hover:text-primary"
                 )}
               >
@@ -135,7 +135,7 @@ export function NavBar() {
             {isTablePage || isSetupPage ? (
               <RulesDialog
                 trigger={
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" className="hover:bg-white/10">
                     <Info className="h-[1.2rem] w-[1.2rem]" />
                     <span className="sr-only">Game Rules</span>
                   </Button>
@@ -150,7 +150,7 @@ export function NavBar() {
       </nav>
 
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <DialogContent>
+        <DialogContent className="glass-card">
           <DialogHeader>
             <DialogTitle>Leaving the table</DialogTitle>
             <DialogDescription>
@@ -158,7 +158,7 @@ export function NavBar() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLeaveDialog(false)}>
+            <Button variant="outline" onClick={() => setShowLeaveDialog(false)} className="glass">
               Cancel
             </Button>
             <Button variant="destructive" onClick={confirmNavigation}>

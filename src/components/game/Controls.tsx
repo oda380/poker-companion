@@ -28,10 +28,10 @@ export function Controls() {
   // Showdown Mode
   if (currentHand.activePlayerId === "") {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border flex justify-center shadow-2xl pb-8">
+      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 glass border-t border-white/10 flex justify-center shadow-2xl pb-8">
         <Button
           size="lg"
-          className="h-16 px-8 text-xl font-bold bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white shadow-lg animate-in fade-in slide-in-from-bottom-4"
+          className="h-16 px-8 text-xl font-bold bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 text-white shadow-glow-amber animate-in fade-in slide-in-from-bottom-4"
           onClick={() => setUiState({ isShowdownDialogOpen: true })}
         >
           <Swords className="w-6 h-6 mr-2" />
@@ -113,11 +113,11 @@ export function Controls() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border grid grid-cols-3 gap-3 shadow-2xl pb-8">
+    <div className="fixed bottom-0 left-0 right-0 z-40 p-4 glass border-t border-white/10 grid grid-cols-3 gap-3 shadow-2xl pb-8">
       <Button
         variant="secondary"
         size="lg"
-        className="h-16 text-xl font-bold bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/30 active:scale-95 transition-transform"
+        className="h-16 text-xl font-bold bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white border-0 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
         onClick={() => playerAction("fold")}
       >
         Fold
@@ -127,10 +127,10 @@ export function Controls() {
         variant="secondary"
         size="lg"
         className={cn(
-          "h-16 text-xl font-bold border-0 shadow-lg active:scale-95 transition-transform text-white",
+          "h-16 text-xl font-bold border-0 shadow-lg active:scale-95 transition-all text-white",
           showShowdownButton
-            ? "bg-gradient-to-br from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 shadow-amber-500/30"
-            : "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30"
+            ? "bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 hover:from-amber-600 hover:via-orange-600 hover:to-red-600 shadow-amber-500/30"
+            : "bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/30"
         )}
         onClick={() => {
           const activeId = currentHand.activePlayerId || "";
@@ -161,17 +161,17 @@ export function Controls() {
         <SheetTrigger asChild>
           <Button
             size="lg"
-            className="h-16 text-xl font-bold bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform text-white dark:text-white"
+            className="h-16 text-xl font-bold bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:via-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/30 active:scale-95 transition-all text-white"
           >
             {currentBet > 0 ? "Call / Raise" : "Bet"}
           </Button>
         </SheetTrigger>
         <SheetContent
           side="bottom"
-          className="h-auto max-h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-xl"
+          className="h-auto max-h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-xl glass-strong border-t border-white/10"
         >
           <div className="flex flex-col gap-4 p-2">
-            <div className="text-center text-2xl font-bold">Bet Amount</div>
+            <div className="text-center text-2xl font-bold text-gradient-emerald">Bet Amount</div>
 
             {currentBet > 0 &&
               (() => {
@@ -200,13 +200,13 @@ export function Controls() {
               onValueChange={(v) => setInputMode(v as "slider" | "numpad")}
               className="flex flex-col"
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="slider">Slider</TabsTrigger>
-                <TabsTrigger value="numpad">Numpad</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 glass">
+                <TabsTrigger value="slider" className="data-[state=active]:bg-white/10">Slider</TabsTrigger>
+                <TabsTrigger value="numpad" className="data-[state=active]:bg-white/10">Numpad</TabsTrigger>
               </TabsList>
 
               <div className="flex flex-col justify-center gap-4 py-4">
-                <div className="text-6xl font-bold text-center tabular-nums tracking-tighter">
+                <div className="text-6xl font-bold text-center tabular-nums tracking-tighter text-gradient-emerald">
                   {betAmount}
                 </div>
 
@@ -221,24 +221,28 @@ export function Controls() {
                   <div className="grid grid-cols-4 gap-2">
                     <Button
                       variant="outline"
+                      className="glass"
                       onClick={() => setBetAmount(minRaise)}
                     >
                       Min
                     </Button>
                     <Button
                       variant="outline"
+                      className="glass"
                       onClick={() => setBetAmount(currentBet * 2)}
                     >
                       2x
                     </Button>
                     <Button
                       variant="outline"
+                      className="glass"
                       onClick={() => setBetAmount(currentBet * 3)}
                     >
                       3x
                     </Button>
                     <Button
                       variant="outline"
+                      className="glass"
                       onClick={() => setBetAmount(playerStack)}
                     >
                       All-In
@@ -254,7 +258,7 @@ export function Controls() {
 
             <Button
               size="lg"
-              className="h-16 text-xl w-full"
+              className="h-16 text-xl w-full btn-glow"
               onClick={() => handleBet(betAmount)}
               disabled={betAmount === 0}
             >

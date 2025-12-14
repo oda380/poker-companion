@@ -10,8 +10,7 @@ import { calculatePots, type PlayerCommitment } from "./pot-calculator";
 // Helper to print results
 function printScenario(
   name: string,
-  commitments: PlayerCommitment[],
-  dealerSeat: number = 0
+  commitments: PlayerCommitment[]
 ) {
   console.log(`\n${"=".repeat(60)}`);
   console.log(`Scenario: ${name}`);
@@ -57,8 +56,7 @@ function printScenario(
   console.log(`  Total Refunds: ${refundsTotal}`);
   console.log(`  Sum (Pots + Refunds): ${potsTotal + refundsTotal}`);
   console.log(
-    `  ✅ Money Conserved: ${
-      potsTotal + refundsTotal === committedTotal ? "YES" : "NO ❌"
+    `  ✅ Money Conserved: ${potsTotal + refundsTotal === committedTotal ? "YES" : "NO ❌"
     }`
   );
 }

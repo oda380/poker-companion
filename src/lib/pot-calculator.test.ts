@@ -1,3 +1,4 @@
+/* eslint-disable */
 // src/lib/__tests__/pot-calculator.test.ts
 import { describe, it, expect } from "vitest";
 import { calculatePots, type PlayerCommitment } from "@/lib/pot-calculator";
@@ -5,9 +6,9 @@ import { calculatePots, type PlayerCommitment } from "@/lib/pot-calculator";
 // --- Helpers (mirror ShowdownDialog) ---
 type PlayerSeat = { id: string; seat: number };
 
-function buildSeatRing(playersInHand: PlayerSeat[], dealerSeat: number) {
+function buildSeatRing(playersInHand: PlayerSeat[], targetSeat: number) {
   const sorted = [...playersInHand].sort((a, b) => a.seat - b.seat);
-  const dealerIdx = sorted.findIndex((p) => p.seat === dealerSeat);
+  const dealerIdx = sorted.findIndex((p) => p.seat === targetSeat);
   if (dealerIdx >= 0) {
     return [...sorted.slice(dealerIdx + 1), ...sorted.slice(0, dealerIdx + 1)];
   }
@@ -289,7 +290,7 @@ describe("pot-calculator (calculatePots)", () => {
           (p) =>
             p.amount === expectedPot.amount &&
             sortIds(p.eligiblePlayerIds).join(",") ===
-              sortIds(expectedPot.eligible).join(",")
+            sortIds(expectedPot.eligible).join(",")
         );
         expect(idx).toBeGreaterThanOrEqual(0);
         remaining.splice(idx, 1);
